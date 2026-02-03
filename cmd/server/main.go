@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"lib/internal/api"
-	"lib/internal/database"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/knibirdgautam/library/internal/api"
+	"github.com/knibirdgautam/library/internal/database"
 
 	"github.com/joho/godotenv"
 )

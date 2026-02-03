@@ -8,3 +8,7 @@ main
 
 # OS files
 .DS_Store
+
+# SQLite databases
+*.db
+*.db-journal

@@ -1,4 +1,4 @@
-module lib
+module github.com/knibirdgautam/library
 
 go 1.25.5
 

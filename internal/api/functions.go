@@ -2,8 +2,9 @@ package api
 
 import (
 	"errors"
-	"lib/internal/database"
 	"slices"
+
+	"github.com/knibirdgautam/library/internal/database"
 )
 
 func validateBook(b database.Book) bool {

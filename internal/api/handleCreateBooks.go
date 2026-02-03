@@ -2,8 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"lib/internal/database"
 	"net/http"
+
+	"github.com/knibirdgautam/library/internal/database"
 )
 
 func HandleCreateBooks(db *[]database.Book) http.HandlerFunc {

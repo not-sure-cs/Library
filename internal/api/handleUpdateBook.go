@@ -2,9 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"lib/internal/database"
 	"net/http"
 	"strconv"
+
+	"github.com/knibirdgautam/library/internal/database"
 )
 
 func HandleUpdateBooks(db *[]database.Book) http.HandlerFunc {

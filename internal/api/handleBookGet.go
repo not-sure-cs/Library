@@ -1,8 +1,9 @@
 package api
 
 import (
-	"lib/internal/database"
 	"net/http"
+
+	"github.com/knibirdgautam/library/internal/database"
 )
 
 func HandleBookGet(db *[]database.Book) http.HandlerFunc {
@@ -15,7 +16,6 @@ func HandleBookGet(db *[]database.Book) http.HandlerFunc {
 			handleGetBook(db)(w, r)
 			return
 		}
-		
 
 		if len(r.URL.Query()) > 0 {
 			handleSearchBook(db)(w, r)

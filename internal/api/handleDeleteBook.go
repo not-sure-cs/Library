@@ -1,9 +1,10 @@
 package api
 
 import (
-	"lib/internal/database"
 	"net/http"
 	"strconv"
+
+	"github.com/knibirdgautam/library/internal/database"
 )
 
 func HandleDeleteBook(db *[]database.Book) http.HandlerFunc {

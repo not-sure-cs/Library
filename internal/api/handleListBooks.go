@@ -1,8 +1,9 @@
 package api
 
 import (
-	"lib/internal/database"
 	"net/http"
+
+	"github.com/knibirdgautam/library/internal/database"
 )
 
 func handleListBooks(db *[]database.Book) http.HandlerFunc {

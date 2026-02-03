@@ -1,9 +1,10 @@
 package api
 
 import (
-	"lib/internal/database"
 	"net/http"
 	"strings"
+
+	"github.com/knibirdgautam/library/internal/database"
 )
 
 func handleSearchBook(db *[]database.Book) http.HandlerFunc {
