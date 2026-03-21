@@ -11,6 +11,8 @@ import (
 	"github.com/knibirdgautam/library/internal/database"
 
 	"github.com/joho/godotenv"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
@@ -27,13 +29,22 @@ func main() {
 
 	fmt.Printf("Port: %s\n", portString)
 
+	dbURL := os.Getenv("DB_URL")
+	conn, err := database.NewConnection(dbURL)
+	if err != nil {
+		log.Fatal("Could not connect to DB:", err)
+	}
+
+	apiCfg := database.New(conn)
+
 	mux := http.NewServeMux()
 
+	//mux.HandleFunc("/Login", api.handleLogger())
 	mux.HandleFunc("/status", api.HandleStatus(start))
-	mux.HandleFunc("POST /book", api.HandleCreateBooks(&database.BookDB))
-	mux.HandleFunc("GET /book/{id...}", api.HandleBookGet(&database.BookDB))
-	mux.HandleFunc("PUT /book/{id}", api.HandleUpdateBooks(&database.BookDB))
-	mux.HandleFunc("DELETE /book/{id}", api.HandleDeleteBook(&database.BookDB))
+	mux.HandleFunc("POST /book", api.HandleCreateBooks(apiCfg))
+	mux.HandleFunc("GET /book/{id...}", api.HandleBookGet(apiCfg))
+	mux.HandleFunc("PUT /book/{id}", api.HandleUpdateBooks(&apiCfg))
+	mux.HandleFunc("DELETE /book/{id}", api.HandleDeleteBook(apiCfg))
 
 	wrappedMux := api.JSONMiddleware(mux)
 

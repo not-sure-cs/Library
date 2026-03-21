@@ -2,8 +2,8 @@ package api
 
 import (
 	"net/http"
-	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/knibirdgautam/library/internal/database"
 )
 
@@ -13,14 +13,14 @@ func handleGetBook(db *[]database.Book) http.HandlerFunc {
 
 		idStr := r.PathValue("id")
 
-		id, err := strconv.Atoi(idStr)
+		id,err := uuid.Parse(idStr)
 
 		if err != nil {
 			RespondWithError(w, http.StatusUnprocessableEntity, "ID is invalid")
 			return
 		}
 
-		book, err1 := findBook(db, id)
+		book, err := q.Getbook
 		if err1 != nil {
 			RespondWithError(w, http.StatusNotFound, err1.Error())
 			return
