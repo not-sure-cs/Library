@@ -4,8 +4,7 @@ CREATE TABLE users (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     name TEXT NOT NULL,
-    PRIMARY KEY(id),
-    api_key VARCHAR(64) NOT NULL UNIQUE
+    PRIMARY KEY(id)
 );
 
 -- +goose Down

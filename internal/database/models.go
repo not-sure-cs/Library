@@ -5,31 +5,36 @@
 package database
 
 import (
-	"github.com/jackc/pgx/v5/pgtype"
+	"database/sql"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Author struct {
-	ID   pgtype.UUID
-	Name string
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Name      string
 }
 
 type Book struct {
-	ID        pgtype.UUID
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	Name      string
-	Isbn      pgtype.Text
+	Isbn      sql.NullString
 }
 
 type BookAuthor struct {
-	BookID   pgtype.UUID
-	AuthorID pgtype.UUID
+	BookID   uuid.UUID
+	AuthorID uuid.UUID
+	ApiKey   string
 }
 
 type User struct {
-	ID        pgtype.UUID
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	Name      string
-	ApiKey    string
 }

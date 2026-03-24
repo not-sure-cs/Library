@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -30,21 +31,22 @@ func main() {
 	fmt.Printf("Port: %s\n", portString)
 
 	dbURL := os.Getenv("DB_URL")
-	conn, err := database.NewConnection(dbURL)
+	conn, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatal("Could not connect to DB:", err)
+		log.Fatal("Cant connect to Database")
 	}
 
-	apiCfg := database.New(conn)
+	db := database.New(conn)
+
+	apiCfg := db
 
 	mux := http.NewServeMux()
 
 	//mux.HandleFunc("/Login", api.handleLogger())
 	mux.HandleFunc("/status", api.HandleStatus(start))
 	mux.HandleFunc("POST /book", api.HandleCreateBooks(apiCfg))
-	mux.HandleFunc("GET /book/{id...}", api.HandleBookGet(apiCfg))
-	mux.HandleFunc("PUT /book/{id}", api.HandleUpdateBooks(&apiCfg))
-	mux.HandleFunc("DELETE /book/{id}", api.HandleDeleteBook(apiCfg))
+	mux.HandleFunc("GET /book/{name..}", api.HandleGetBooks(apiCfg))
+	mux.HandleFunc("GET /book/{author..}", api.HandleListOfAuthorBooks(apiCfg))
 
 	wrappedMux := api.JSONMiddleware(mux)
 

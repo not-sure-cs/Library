@@ -7,25 +7,39 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const createAuthor = `-- name: CreateAuthor :one
-INSERT INTO authors (id, name)
-VALUES($1, $2)
-RETURNING id, name
+INSERT INTO authors (id,created_at, updated_at, name)
+VALUES($1, $2, $3, $4)
+RETURNING id, created_at, updated_at, name
 `
 
 type CreateAuthorParams struct {
-	ID   pgtype.UUID
-	Name string
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Name      string
 }
 
 func (q *Queries) CreateAuthor(ctx context.Context, arg CreateAuthorParams) (Author, error) {
-	row := q.db.QueryRow(ctx, createAuthor, arg.ID, arg.Name)
+	row := q.db.QueryRowContext(ctx, createAuthor,
+		arg.ID,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+		arg.Name,
+	)
 	var i Author
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+	)
 	return i, err
 }
 
@@ -36,15 +50,15 @@ RETURNING id, created_at, updated_at, name, isbn
 `
 
 type CreateBookParams struct {
-	ID        pgtype.UUID
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	Name      string
-	Isbn      pgtype.Text
+	Isbn      sql.NullString
 }
 
 func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, error) {
-	row := q.db.QueryRow(ctx, createBook,
+	row := q.db.QueryRowContext(ctx, createBook,
 		arg.ID,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -70,7 +84,7 @@ LIMIT 1
 `
 
 func (q *Queries) GetAuthor(ctx context.Context, name string) (string, error) {
-	row := q.db.QueryRow(ctx, getAuthor, name)
+	row := q.db.QueryRowContext(ctx, getAuthor, name)
 	err := row.Scan(&name)
 	return name, err
 }
@@ -78,17 +92,17 @@ func (q *Queries) GetAuthor(ctx context.Context, name string) (string, error) {
 const linkBookAuthor = `-- name: LinkBookAuthor :one
 INSERT INTO book_authors (book_id, author_id)
 VALUES($1, $2)
-RETURNING book_id, author_id
+RETURNING book_id, author_id, api_key
 `
 
 type LinkBookAuthorParams struct {
-	BookID   pgtype.UUID
-	AuthorID pgtype.UUID
+	BookID   uuid.UUID
+	AuthorID uuid.UUID
 }
 
 func (q *Queries) LinkBookAuthor(ctx context.Context, arg LinkBookAuthorParams) (BookAuthor, error) {
-	row := q.db.QueryRow(ctx, linkBookAuthor, arg.BookID, arg.AuthorID)
+	row := q.db.QueryRowContext(ctx, linkBookAuthor, arg.BookID, arg.AuthorID)
 	var i BookAuthor
-	err := row.Scan(&i.BookID, &i.AuthorID)
+	err := row.Scan(&i.BookID, &i.AuthorID, &i.ApiKey)
 	return i, err
 }

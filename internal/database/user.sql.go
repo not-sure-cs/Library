@@ -7,25 +7,26 @@ package database
 
 import (
 	"context"
+	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, created_at, updated_at, name)
 VALUES ($1, $2, $3, $4)
-RETURNING id, created_at, updated_at, name, api_key
+RETURNING id, created_at, updated_at, name
 `
 
 type CreateUserParams struct {
-	ID        pgtype.UUID
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	Name      string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser,
+	row := q.db.QueryRowContext(ctx, createUser,
 		arg.ID,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -37,7 +38,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Name,
-		&i.ApiKey,
 	)
 	return i, err
 }

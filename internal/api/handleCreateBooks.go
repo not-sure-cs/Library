@@ -10,7 +10,7 @@ import (
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-func HandleCreateBooks(q *database.Queries) http.HandlerFunc {
+func HandleCreateBooks(queries *database.Queries) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -33,27 +33,28 @@ func HandleCreateBooks(q *database.Queries) http.HandlerFunc {
 			return
 		}
 
-		aut, err := q.GetAuthor(r.Context(), params.Author)
+		_, err := queries.GetAuthor(r.Context(), params.Author)
 
-		if err != nil {
-			author, err := q.CreateAuthor(r.Context(), database.CreateAuthorParams{
-				ID:        pgtype.UUID{Bytes: uuid.New(), Valid: true},
-				Name: paramsr,
+		if err != nil 
+			author, err := queries.CreateAuthor(r.Context(), database.CreateAuthorParams{
+				ID:        uuid.New(),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+				Name: params.Author,
 			})
 
 			if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, "Could not Create Author")
-			
-			}
+			return 
 		}
 
 
-		book, err := q.CreateBook(r.Context(), database.CreateBookParams{
-			ID:        pgtype.UUID{Bytes: uuid.New(), Valid: true},
-			CreatedAt: pgtype.Timestamp{Time: time.Now(), Valid: true},
-			UpdatedAt: pgtype.Timestamp{Time: time.Now(), Valid: true},
+		book, err := queries.CreateBook(r.Context(), database.CreateBookParams{
+			ID: uuid.New(),       
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 			Name:     params.Title,
-			Isbn: pgtype.Text{String: params.Isbn, Valid: true},
+			Isbn: params.Isbn,
 
 		})
 
@@ -62,7 +63,7 @@ func HandleCreateBooks(q *database.Queries) http.HandlerFunc {
 			return 
 		}
 
-		linker, err:= q.LinkBookAuthor(r.Context(), database.LinkBookAuthorParams{
+		linker, err:= queries.LinkBookAuthor(r.Context(), database.LinkBookAuthorParams{
 			BookID: book.ID ,
 			AuthorID: author.ID,
 

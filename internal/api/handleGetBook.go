@@ -3,29 +3,25 @@ package api
 import (
 	"net/http"
 
-	"github.com/google/uuid"
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-func handleGetBook(db *[]database.Book) http.HandlerFunc {
+func HandleGetBooks(queries *database.Queries) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		idStr := r.PathValue("id")
-
-		id,err := uuid.Parse(idStr)
-
-		if err != nil {
-			RespondWithError(w, http.StatusUnprocessableEntity, "ID is invalid")
+		if r.Method != http.MethodGet {
+			RespondWithError(w, http.StatusMethodNotAllowed, "Only GET requests allowed")
 			return
 		}
 
-		book, err := q.Getbook
-		if err1 != nil {
-			RespondWithError(w, http.StatusNotFound, err1.Error())
-			return
+		name := r.PathValue("name")
+
+		book,err := queries.GetBook(r.Context(), name)
+		if err!= nil{
+			RespondWithError(w, http.StatusBadRequest, "Unable to Find Name")
 		}
 
-		RespondWithJSON(w, http.StatusOK, *book)
+		RespondWithJSON(w, http.StatusOK,book)
 	}
 }

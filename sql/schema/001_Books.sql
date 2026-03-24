@@ -9,7 +9,9 @@ CREATE TABLE books (
 );
 
 CREATE TABLE authors (
-    id UUID PRIMARY KEY,
+    id UUID NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
     name TEXT NOT NULL,
     PRIMARY KEY(id)
 );
@@ -21,7 +23,8 @@ CREATE TABLE book_authors (
 );
 
 -- +goose Down
-DROP TABLE book;
-DROP TABLE authors;
 DROP TABLE book_authors;
+DROP TABLE books;
+DROP TABLE authors;
+
 
