@@ -41,7 +41,7 @@ func main() {
 
 	fmt.Printf("DB_URL: %s\n", dbURL)
 
-	conn, err := sql.Open("postgres", dbURL)
+	conn, err := sql.Open("pgx", dbURL)
 	if err != nil {
 
 		log.Fatal("Cant connect to Database")
@@ -62,8 +62,8 @@ func main() {
 	//mux.HandleFunc("/Login", api.handleLogger())
 	mux.HandleFunc("/status", api.HandleStatus(start))
 	mux.HandleFunc("/book", api.HandleCreateBooks(apiCfg))
-	mux.HandleFunc("/book/{id}}", api.HandleGetBooks(apiCfg))
-	mux.HandleFunc("/book/{id}", api.HandleListOfAuthorBooks(apiCfg))
+	mux.HandleFunc("/book/{id}", api.HandleGetBooks(apiCfg))
+	mux.HandleFunc("/books/{id}", api.HandleListOfAuthorBooks(apiCfg))
 
 	wrappedMux := api.JSONMiddleware(mux)
 
