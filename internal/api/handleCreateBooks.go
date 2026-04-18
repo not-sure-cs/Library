@@ -68,6 +68,7 @@ func HandleCreateBooks(queries *database.Queries) http.HandlerFunc {
 
 		if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, "Couldn't link Books and Authors")
+			return
 		}
 
 		resp := database.Linked{

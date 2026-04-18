@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/google/uuid"
 )
 
 func ToNullString(s string) sql.NullString {
@@ -33,18 +34,17 @@ const updateBook = `
 	RETURNING id, created_at, updated_at, name, isbn
 `
 
-func (q *Queries) UpdateBook(ctx context.Context, book *GetBookRow, arg Parameters) (*GetBookRow, error) {
+func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) (Book, error) {
 
-	row := q.db.QueryRowContext(ctx, updateBook, arg.Title, arg.Author, arg.Isbn,)
+	row := q.db.QueryRowContext(ctx, updateBook, arg.Title, ToNullString(arg.Isbn), id)
 
+	var i Book
 	err := row.Scan(
-		&book.Name,
-		&book.Name_2,
-		&book.BookID,
-		&book.CreatedAt,
-		&book.UpdatedAt,
-		&book.Name,
-		&book.Isbn,
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Isbn,
 	)
-	return book, err
+	return i, err
 }

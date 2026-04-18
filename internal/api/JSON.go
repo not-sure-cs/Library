@@ -23,12 +23,12 @@ func RespondWithError(w http.ResponseWriter, statusCode int, msg string) {
 }
 
 func RespondWithJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
+	w.WriteHeader(statusCode)
 	err := json.NewEncoder(w).Encode(payload)
 
 	if err != nil {
 		log.Printf("Failed to encode JSON response: %v", payload)
-		w.WriteHeader(http.StatusInternalServerError)
+		// Note: We can't change the status code now because headers are already sent.
 		return
 	}
-	w.WriteHeader(statusCode)
 }

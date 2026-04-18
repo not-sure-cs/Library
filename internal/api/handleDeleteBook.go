@@ -7,7 +7,7 @@ import (
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-func HandleDeleteBook(queries database.Queries) http.HandlerFunc {
+func HandleDeleteBook(queries *database.Queries) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -30,7 +30,7 @@ func HandleDeleteBook(queries database.Queries) http.HandlerFunc {
 			return
 		}
 
-		err = queries.DeleteBook(r.Context(),id)
+		err = queries.DeleteBook(r.Context(), id)
 
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "Couldn't Delete book")

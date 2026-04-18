@@ -8,7 +8,7 @@ import (
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-func HandleUpdateBooks(queries database.Queries) http.HandlerFunc {
+func HandleUpdateBooks(queries *database.Queries) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			RespondWithError(w, http.StatusMethodNotAllowed, "Only PUT Requests allowed")
@@ -26,16 +26,18 @@ func HandleUpdateBooks(queries database.Queries) http.HandlerFunc {
 		decoder := json.NewDecoder(r.Body)
 		params := database.Parameters{}
 		err = decoder.Decode(&params)
-
-		book, err := queries.GetBook(r.Context(), id)
 		if err != nil {
-			RespondWithError(w, http.StatusNotFound, err.Error())
+			RespondWithError(w, http.StatusBadRequest, "Couldn't Parse Body")
 			return
 		}
 
-		
+		book, err := queries.UpdateBook(r.Context(), id, params)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Couldn't update book: "+err.Error())
+			return
+		}
 
 		RespondWithJSON(w, http.StatusOK, book)
-
 	}
 }
+

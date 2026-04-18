@@ -24,9 +24,10 @@ func HandleGetBooks(queries *database.Queries) http.HandlerFunc {
 			return
 		}
 
-		book,err := queries.GetBook(r.Context(), id)
-		if err!= nil{
-			RespondWithError(w, http.StatusBadRequest, "Unable to Find Name")
+		book, err := queries.GetBook(r.Context(), id)
+		if err != nil {
+			RespondWithError(w, http.StatusNotFound, "Book not found")
+			return
 		}
 
 		

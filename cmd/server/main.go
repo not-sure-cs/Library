@@ -59,11 +59,12 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	//mux.HandleFunc("/Login", api.handleLogger())
-	mux.HandleFunc("/status", api.HandleStatus(start))
-	mux.HandleFunc("/book", api.HandleCreateBooks(apiCfg))
-	mux.HandleFunc("/book/{id}", api.HandleGetBooks(apiCfg))
-	mux.HandleFunc("/books/{id}", api.HandleListOfAuthorBooks(apiCfg))
+	mux.HandleFunc("GET /status", api.HandleStatus(start))
+	mux.HandleFunc("POST /book", api.HandleCreateBooks(apiCfg))
+	mux.HandleFunc("GET /book/{id}", api.HandleGetBooks(apiCfg))
+	mux.HandleFunc("PUT /book/{id}", api.HandleUpdateBooks(apiCfg))
+	mux.HandleFunc("DELETE /book/{id}", api.HandleDeleteBook(apiCfg))
+	mux.HandleFunc("GET /author/{id}/books", api.HandleListOfAuthorBooks(apiCfg))
 
 	wrappedMux := api.JSONMiddleware(mux)
 
