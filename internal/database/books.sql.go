@@ -76,17 +76,32 @@ func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, e
 	return i, err
 }
 
+const deleteBook = `-- name: DeleteBook :exec
+DELETE FROM books WHERE id = $1
+`
+
+func (q *Queries) DeleteBook(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteBook, id)
+	return err
+}
+
 const getAuthor = `-- name: GetAuthor :one
-SELECT name 
+SELECT id, created_at, updated_at, name
 FROM authors
 WHERE name = $1
 LIMIT 1
 `
 
-func (q *Queries) GetAuthor(ctx context.Context, name string) (string, error) {
+func (q *Queries) GetAuthor(ctx context.Context, name string) (Author, error) {
 	row := q.db.QueryRowContext(ctx, getAuthor, name)
-	err := row.Scan(&name)
-	return name, err
+	var i Author
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+	)
+	return i, err
 }
 
 const linkBookAuthor = `-- name: LinkBookAuthor :one
@@ -105,4 +120,13 @@ func (q *Queries) LinkBookAuthor(ctx context.Context, arg LinkBookAuthorParams) 
 	var i BookAuthor
 	err := row.Scan(&i.BookID, &i.AuthorID, &i.ApiKey)
 	return i, err
+}
+
+const unlinkBook = `-- name: UnlinkBook :exec
+DELETE FROM book_authors WHERE book_id = $1
+`
+
+func (q *Queries) UnlinkBook(ctx context.Context, bookID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, unlinkBook, bookID)
+	return err
 }

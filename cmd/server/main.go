@@ -19,22 +19,39 @@ import (
 func main() {
 	start := time.Now()
 
-	godotenv.Load()
+	err := godotenv.Load()
+
+	if err != nil {
+        log.Println("Error loading .env file, proceeding without it")
+    }
 
 	portString := os.Getenv("PORT")
 
 	if portString == "" {
 
-		log.Fatal("PORT not Found")
+		log.Fatal("PORT not found")
 	}
 
 	fmt.Printf("Port: %s\n", portString)
 
 	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+        log.Fatal("DB_URL not found")
+    }
+
+	fmt.Printf("DB_URL: %s\n", dbURL)
+
 	conn, err := sql.Open("postgres", dbURL)
 	if err != nil {
+
 		log.Fatal("Cant connect to Database")
 	}
+
+	    if err := conn.Ping(); err != nil {
+        log.Fatalf("Cannot reach Database: %v", err)
+    }
+
+	 fmt.Println("Successfully connected to the database")
 
 	db := database.New(conn)
 
@@ -44,9 +61,9 @@ func main() {
 
 	//mux.HandleFunc("/Login", api.handleLogger())
 	mux.HandleFunc("/status", api.HandleStatus(start))
-	mux.HandleFunc("POST /book", api.HandleCreateBooks(apiCfg))
-	mux.HandleFunc("GET /book/{name..}", api.HandleGetBooks(apiCfg))
-	mux.HandleFunc("GET /book/{author..}", api.HandleListOfAuthorBooks(apiCfg))
+	mux.HandleFunc("/book", api.HandleCreateBooks(apiCfg))
+	mux.HandleFunc("/book/{id}}", api.HandleGetBooks(apiCfg))
+	mux.HandleFunc("/book/{id}", api.HandleListOfAuthorBooks(apiCfg))
 
 	wrappedMux := api.JSONMiddleware(mux)
 

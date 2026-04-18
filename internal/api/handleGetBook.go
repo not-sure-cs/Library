@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/knibirdgautam/library/internal/database"
 )
 
@@ -15,13 +16,21 @@ func HandleGetBooks(queries *database.Queries) http.HandlerFunc {
 			return
 		}
 
-		name := r.PathValue("name")
+		idStr := r.PathValue("id")
+		id, err := uuid.Parse(idStr)
 
-		book,err := queries.GetBook(r.Context(), name)
+		if err != nil {
+			RespondWithError(w, http.StatusUnprocessableEntity, "Couldn't Parse ID")
+			return
+		}
+
+		book,err := queries.GetBook(r.Context(), id)
 		if err!= nil{
 			RespondWithError(w, http.StatusBadRequest, "Unable to Find Name")
 		}
 
-		RespondWithJSON(w, http.StatusOK,book)
+		
+
+		RespondWithJSON(w, http.StatusOK, book)
 	}
 }

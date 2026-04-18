@@ -7,31 +7,47 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"time"
+
+	"github.com/google/uuid"
 )
 
-const getAuthorBook = `-- name: GetAuthorBook :many
-SELECT books.name,authors.name,api_key FROM book_authors 
+const getAuthorBooks = `-- name: GetAuthorBooks :many
+SELECT books.name,authors.name,isbn,books.created_at,books.updated_at,book_id,author_id FROM book_authors 
 JOIN books ON book_authors.book_id = books.id
 JOIN authors ON book_authors.author_id = author_id
-WHERE authors.name = $1
+WHERE authors.id = $1
 `
 
-type GetAuthorBookRow struct {
-	Name   string
-	Name_2 string
-	ApiKey string
+type GetAuthorBooksRow struct {
+	Name      string
+	Name_2    string
+	Isbn      sql.NullString
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	BookID    uuid.UUID
+	AuthorID  uuid.UUID
 }
 
-func (q *Queries) GetAuthorBook(ctx context.Context, name string) ([]GetAuthorBookRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAuthorBook, name)
+func (q *Queries) GetAuthorBooks(ctx context.Context, id uuid.UUID) ([]GetAuthorBooksRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAuthorBooks, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetAuthorBookRow
+	var items []GetAuthorBooksRow
 	for rows.Next() {
-		var i GetAuthorBookRow
-		if err := rows.Scan(&i.Name, &i.Name_2, &i.ApiKey); err != nil {
+		var i GetAuthorBooksRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.Name_2,
+			&i.Isbn,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.BookID,
+			&i.AuthorID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -45,39 +61,33 @@ func (q *Queries) GetAuthorBook(ctx context.Context, name string) ([]GetAuthorBo
 	return items, nil
 }
 
-const getBook = `-- name: GetBook :many
-SELECT books.name,authors.name,api_key FROM book_authors 
+const getBook = `-- name: GetBook :one
+SELECT books.name,authors.name,isbn,books.created_at,books.updated_at,book_id FROM book_authors 
 JOIN books ON book_authors.book_id = books.id
 JOIN authors ON book_authors.author_id = author_id
-WHERE books.name = $1
+WHERE books.id = $1
 LIMIT 1
 `
 
 type GetBookRow struct {
-	Name   string
-	Name_2 string
-	ApiKey string
+	Name      string
+	Name_2    string
+	Isbn      sql.NullString
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	BookID    uuid.UUID
 }
 
-func (q *Queries) GetBook(ctx context.Context, name string) ([]GetBookRow, error) {
-	rows, err := q.db.QueryContext(ctx, getBook, name)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetBookRow
-	for rows.Next() {
-		var i GetBookRow
-		if err := rows.Scan(&i.Name, &i.Name_2, &i.ApiKey); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error) {
+	row := q.db.QueryRowContext(ctx, getBook, id)
+	var i GetBookRow
+	err := row.Scan(
+		&i.Name,
+		&i.Name_2,
+		&i.Isbn,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.BookID,
+	)
+	return i, err
 }

@@ -9,7 +9,7 @@ VALUES($1, $2, $3, $4)
 RETURNING *;
 
 -- name: GetAuthor :one
-SELECT name 
+SELECT *
 FROM authors
 WHERE name = $1
 LIMIT 1;
@@ -18,4 +18,11 @@ LIMIT 1;
 INSERT INTO book_authors (book_id, author_id)
 VALUES($1, $2)
 RETURNING *;
+
+-- name: DeleteBook :exec
+DELETE FROM books WHERE id = $1;
+
+-- name: UnlinkBook :exec
+DELETE FROM book_authors WHERE book_id = $1;
+
 

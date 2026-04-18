@@ -2,12 +2,12 @@ package api
 
 import (
 	"net/http"
-	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-func HandleDeleteBook(db *[]database.Book) http.HandlerFunc {
+func HandleDeleteBook(queries database.Queries) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -17,16 +17,23 @@ func HandleDeleteBook(db *[]database.Book) http.HandlerFunc {
 
 		idStr := r.PathValue("id")
 
-		id, err := strconv.Atoi(idStr)
-
+		id, err := uuid.Parse(idStr)
 		if err != nil {
-			RespondWithError(w, http.StatusUnprocessableEntity, "ID is invalid")
+			RespondWithError(w, http.StatusUnprocessableEntity, "Couldn't Parse ID")
 			return
 		}
 
-		err1 := delBook(db, id)
-		if err1 != nil {
-			RespondWithError(w, http.StatusNotFound, err1.Error())
+		err = queries.UnlinkBook(r.Context(), id)
+
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Couldn't Unlink book")
+			return
+		}
+
+		err = queries.DeleteBook(r.Context(),id)
+
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Couldn't Delete book")
 			return
 		}
 

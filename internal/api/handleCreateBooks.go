@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/knibirdgautam/library/internal/database"
 )
 
@@ -20,7 +19,7 @@ func HandleCreateBooks(queries *database.Queries) http.HandlerFunc {
 
 		type parameters struct {
 			Title  string `json:"title"`
-			Isbn string `json:"isbn"`
+			Isbn   string `json:"isbn"`
 			Author string `json:"author"`
 		}
 
@@ -32,47 +31,51 @@ func HandleCreateBooks(queries *database.Queries) http.HandlerFunc {
 			RespondWithError(w, http.StatusBadRequest, "Failed to decode POST request")
 			return
 		}
+		var author database.Author
+		author, err = queries.GetAuthor(r.Context(), params.Author)
 
-		_, err := queries.GetAuthor(r.Context(), params.Author)
-
-		if err != nil 
-			author, err := queries.CreateAuthor(r.Context(), database.CreateAuthorParams{
+		if err != nil {
+			author, err = queries.CreateAuthor(r.Context(), database.CreateAuthorParams{
 				ID:        uuid.New(),
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
-				Name: params.Author,
+				Name:      params.Author,
 			})
 
 			if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Could not Create Author")
-			return 
+				RespondWithError(w, http.StatusInternalServerError, "Could not Create Author")
+				return
+			}
 		}
 
-
 		book, err := queries.CreateBook(r.Context(), database.CreateBookParams{
-			ID: uuid.New(),       
+			ID:        uuid.New(),
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
-			Name:     params.Title,
-			Isbn: params.Isbn,
-
+			Name:      params.Title,
+			Isbn:      database.ToNullString(params.Isbn),
 		})
 
 		if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, "Could not Create Book")
-			return 
+			return
 		}
 
-		linker, err:= queries.LinkBookAuthor(r.Context(), database.LinkBookAuthorParams{
-			BookID: book.ID ,
+		linker, err := queries.LinkBookAuthor(r.Context(), database.LinkBookAuthorParams{
+			BookID:   book.ID,
 			AuthorID: author.ID,
-
 		})
 
 		if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, "Couldn't link Books and Authors")
 		}
 
-		RespondWithJSON(w, http.StatusOK, book)
+		resp := database.Linked{
+			Author: author,
+			Book:   book,
+			Link:   linker,
+		}
+
+		RespondWithJSON(w, http.StatusOK, resp)
 	}
 }
