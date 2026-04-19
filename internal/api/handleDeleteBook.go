@@ -7,7 +7,7 @@ import (
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-func HandleDeleteBook(queries *database.Queries) http.HandlerFunc {
+func HandleDeleteBook(queries database.DBQueries) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {

@@ -8,7 +8,7 @@ import (
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-func HandleUpdateBooks(queries *database.Queries) http.HandlerFunc {
+func HandleUpdateBooks(queries database.DBQueries) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			RespondWithError(w, http.StatusMethodNotAllowed, "Only PUT Requests allowed")

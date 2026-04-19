@@ -7,7 +7,7 @@ import (
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-func HandleListOfAuthorBooks(queries *database.Queries) http.HandlerFunc {
+func HandleListOfAuthorBooks(queries database.DBQueries) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method != http.MethodGet {

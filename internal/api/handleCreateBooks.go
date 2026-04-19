@@ -9,7 +9,7 @@ import (
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-func HandleCreateBooks(queries *database.Queries) http.HandlerFunc {
+func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

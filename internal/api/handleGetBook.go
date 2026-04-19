@@ -7,7 +7,7 @@ import (
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-func HandleGetBooks(queries *database.Queries) http.HandlerFunc {
+func HandleGetBooks(queries database.DBQueries) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
