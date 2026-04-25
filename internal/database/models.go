@@ -24,6 +24,8 @@ type Book struct {
 	UpdatedAt time.Time
 	Name      string
 	Isbn      sql.NullString
+	FilePath  string
+	MimeType  sql.NullString
 }
 
 type BookAuthor struct {

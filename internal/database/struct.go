@@ -1,7 +1,9 @@
 package database 
 
+
 type Linked struct {
 	Author interface{} `json:"author"`
 	Book interface{}  `json:"book"`
-	Link   interface{} `json:"link"`	
+	Link   interface{} `json:"link"`
+	Metadata interface{}	`json:"metadata"`
 }

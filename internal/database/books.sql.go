@@ -44,9 +44,9 @@ func (q *Queries) CreateAuthor(ctx context.Context, arg CreateAuthorParams) (Aut
 }
 
 const createBook = `-- name: CreateBook :one
-INSERT INTO books (id, created_at, updated_at, name, isbn)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, created_at, updated_at, name, isbn
+INSERT INTO books (id, created_at, updated_at, name, isbn, file_path, mime_type)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, created_at, updated_at, name, isbn, file_path, mime_type
 `
 
 type CreateBookParams struct {
@@ -55,6 +55,8 @@ type CreateBookParams struct {
 	UpdatedAt time.Time
 	Name      string
 	Isbn      sql.NullString
+	FilePath  string
+	MimeType  sql.NullString
 }
 
 func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, error) {
@@ -64,6 +66,8 @@ func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, e
 		arg.UpdatedAt,
 		arg.Name,
 		arg.Isbn,
+		arg.FilePath,
+		arg.MimeType,
 	)
 	var i Book
 	err := row.Scan(
@@ -72,6 +76,8 @@ func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, e
 		&i.UpdatedAt,
 		&i.Name,
 		&i.Isbn,
+		&i.FilePath,
+		&i.MimeType,
 	)
 	return i, err
 }

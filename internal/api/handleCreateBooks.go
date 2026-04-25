@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,20 +18,36 @@ func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 			return
 		}
 
+		num, err := queries.CountBook(r.Context())
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Couldn't Count Books")
+			return
+		}
+
+		r.ParseMultipartForm(200 << 20)
+
+		file, fileHandler, err := r.FormFile("uploadFile")
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Failed to Marshal File Response")
+			return
+		}
+
+		path, err := database.SaveFile(num, file, fileHandler)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Failed to Save the Uploaded file File")
+			return
+		}
+
 		type parameters struct {
 			Title  string `json:"title"`
 			Isbn   string `json:"isbn"`
 			Author string `json:"author"`
 		}
-
-		decoder := json.NewDecoder(r.Body)
+		jsonStr := r.FormValue("metadata")
 		params := parameters{}
-		err := decoder.Decode(&params)
 
-		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Failed to decode POST request")
-			return
-		}
+		err = json.NewDecoder(strings.NewReader(jsonStr)).Decode(&params)
+
 		var author database.Author
 		author, err = queries.GetAuthor(r.Context(), params.Author)
 
@@ -54,6 +71,7 @@ func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 			UpdatedAt: time.Now(),
 			Name:      params.Title,
 			Isbn:      database.ToNullString(params.Isbn),
+			FilePath:  path,
 		})
 
 		if err != nil {

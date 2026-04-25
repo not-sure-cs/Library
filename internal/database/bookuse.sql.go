@@ -91,3 +91,22 @@ func (q *Queries) GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error)
 	)
 	return i, err
 }
+
+const getMetaData = `-- name: GetMetaData :one
+SELECT books.file_path, books.mime_type FROM books
+JOIN book_authors ON book_authors.book_id = books.id
+WHERE book_authors.api_key = $1
+LIMIT 1
+`
+
+type GetMetaDataRow struct {
+	FilePath string
+	MimeType sql.NullString
+}
+
+func (q *Queries) GetMetaData(ctx context.Context, apiKey string) (GetMetaDataRow, error) {
+	row := q.db.QueryRowContext(ctx, getMetaData, apiKey)
+	var i GetMetaDataRow
+	err := row.Scan(&i.FilePath, &i.MimeType)
+	return i, err
+}
