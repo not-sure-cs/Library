@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -34,7 +35,7 @@ func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 
 		path, err := database.SaveFile(num, file, fileHandler)
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Failed to Save the Uploaded file File")
+			RespondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to Save the Uploaded File:%s", err))
 			return
 		}
 
@@ -47,6 +48,10 @@ func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 		params := parameters{}
 
 		err = json.NewDecoder(strings.NewReader(jsonStr)).Decode(&params)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Failed to Decode JSON Body")
+			return 
+		}
 
 		var author database.Author
 		author, err = queries.GetAuthor(r.Context(), params.Author)
@@ -75,7 +80,8 @@ func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 		})
 
 		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Could not Create Book")
+			
+			RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("DBError: %s", err))
 			return
 		}
 

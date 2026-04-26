@@ -15,7 +15,7 @@ func RespondWithError(w http.ResponseWriter, statusCode int, msg string) {
 	if statusCode < http.StatusInternalServerError {
 		response = map[string]string{"Error": msg}
 	} else {
-		response = map[string]string{"Error": "Internal Server Error"}
+		response = map[string]string{"Error": msg}
 	}
 
 	RespondWithJSON(w, statusCode, response)

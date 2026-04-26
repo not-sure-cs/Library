@@ -56,7 +56,7 @@ func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) 
 	return i, err
 }
 
-const path = "Library/Public/Books/"
+const path = "Public/Books/"
 
 func GenerateFileName(id int64, now time.Time) string {
 
