@@ -34,9 +34,18 @@ type BookAuthor struct {
 	ApiKey   string
 }
 
+type Secret struct {
+	UserID   uuid.UUID
+	PassHash string
+}
+
 type User struct {
 	ID        uuid.UUID
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Name      string
+	FirstName string
+	LastName  string
+	Email     sql.NullString
+	PhNo      sql.NullString
+	Role      sql.NullString
 }

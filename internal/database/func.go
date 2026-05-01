@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func ToNullString(s string) sql.NullString {
@@ -103,4 +105,24 @@ func SaveFile(total int64, file multipart.File, handler *multipart.FileHeader) (
 
 	tempFile.Write(fileBytes)
 	return tempFile.Name(), nil
+}
+
+func PasswordHash(pass []byte) string {
+
+	hash, err := bcrypt.GenerateFromPassword(pass, bcrypt.MinCost) 
+	if err != nil {
+		log.Println(err)
+	}
+	return string(hash)
+}
+
+func PasswordVerify(hash string, pass []byte) bool {
+	byteHash := []byte(hash)
+	err := bcrypt.CompareHashAndPassword(byteHash, pass) 
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return true
+
 }

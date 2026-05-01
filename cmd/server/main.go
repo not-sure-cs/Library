@@ -22,8 +22,8 @@ func main() {
 	err := godotenv.Load()
 
 	if err != nil {
-        log.Println("Error loading .env file, proceeding without it")
-    }
+		log.Println("Error loading .env file, proceeding without it")
+	}
 
 	portString := os.Getenv("PORT")
 
@@ -36,8 +36,8 @@ func main() {
 
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
-        log.Fatal("DB_URL not found")
-    }
+		log.Fatal("DB_URL not found")
+	}
 
 	fmt.Printf("DB_URL: %s\n", dbURL)
 
@@ -47,11 +47,11 @@ func main() {
 		log.Fatal("Cant connect to Database")
 	}
 
-	    if err := conn.Ping(); err != nil {
-        log.Fatalf("Cannot reach Database: %v", err)
-    }
+	if err := conn.Ping(); err != nil {
+		log.Fatalf("Cannot reach Database: %v", err)
+	}
 
-	 fmt.Println("Successfully connected to the database")
+	fmt.Println("Successfully connected to the database")
 
 	db := database.New(conn)
 
@@ -60,6 +60,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /status", api.HandleStatus(start))
+	mux.HandleFunc("POST /user", api.HandleSignUp(apiCfg))
 	mux.HandleFunc("POST /book", api.HandleCreateBooks(apiCfg))
 	mux.HandleFunc("GET /book/{id}", api.HandleGetBooks(apiCfg))
 	mux.HandleFunc("PUT /book/{id}", api.HandleUpdateBooks(apiCfg))

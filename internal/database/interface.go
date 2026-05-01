@@ -20,4 +20,5 @@ type DBQueries interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) (Book, error)
 	CountBook(ctx context.Context) (int64, error)
+	LinkHash(ctx context.Context, arg LinkHashParams) error
 }

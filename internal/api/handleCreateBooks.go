@@ -19,17 +19,32 @@ func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 			return
 		}
 
-		num, err := queries.CountBook(r.Context())
-		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Couldn't Count Books")
-			return
-		}
+		countChannel := make(chan int64, 1)
+		errChannel := make(chan error, 1)
+
+		go func() {
+			num, err := queries.CountBook(r.Context())
+			if err != nil {
+				errChannel <- err
+				return
+			}
+			countChannel <- num
+		}()
 
 		r.ParseMultipartForm(200 << 20)
 
 		file, fileHandler, err := r.FormFile("uploadFile")
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "Failed to Marshal File Response")
+			return
+		}
+
+		var num int64
+		select {
+		case num = <-countChannel:
+
+		case err = <-errChannel:
+			RespondWithError(w, http.StatusBadRequest, "Couldn't Count Books")
 			return
 		}
 
@@ -50,7 +65,7 @@ func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 		err = json.NewDecoder(strings.NewReader(jsonStr)).Decode(&params)
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "Failed to Decode JSON Body")
-			return 
+			return
 		}
 
 		var author database.Author
@@ -80,7 +95,7 @@ func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 		})
 
 		if err != nil {
-			
+
 			RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("DBError: %s", err))
 			return
 		}
