@@ -2,12 +2,14 @@ package main
 
 import (
 	"database/sql"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/knibirdgautam/library/internal/api"
 	"github.com/knibirdgautam/library/internal/database"
 
@@ -16,10 +18,19 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+func init() {
+	gob.Register(uuid.UUID{})
+	gob.Register(sql.NullString{})
+}
+
 func main() {
 	start := time.Now()
 
 	err := godotenv.Load()
+
+	//type srvParams struct {
+
+	//}
 
 	if err != nil {
 		log.Println("Error loading .env file, proceeding without it")
@@ -60,7 +71,8 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /status", api.HandleStatus(start))
-	mux.HandleFunc("POST /user", api.HandleSignUp(apiCfg))
+	mux.HandleFunc("POST /user/signup", api.HandleSignUp(apiCfg))
+	mux.HandleFunc("POST /user/login", api.HandleLogging(apiCfg))
 	mux.HandleFunc("POST /book", api.HandleCreateBooks(apiCfg))
 	mux.HandleFunc("GET /book/{id}", api.HandleGetBooks(apiCfg))
 	mux.HandleFunc("PUT /book/{id}", api.HandleUpdateBooks(apiCfg))
@@ -70,8 +82,13 @@ func main() {
 	wrappedMux := api.JSONMiddleware(mux)
 
 	srv := http.Server{
-		Addr:    ":" + portString,
-		Handler: wrappedMux,
+		Addr:              ":" + portString,
+		Handler:           wrappedMux,
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       3 * time.Minute,
+		ReadHeaderTimeout: 5 * time.Second,
+		MaxHeaderBytes:    1 << 20,
 	}
 
 	fmt.Printf("Starting Server on Port: %s\n", portString)

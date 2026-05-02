@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -21,4 +22,6 @@ type DBQueries interface {
 	UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) (Book, error)
 	CountBook(ctx context.Context) (int64, error)
 	LinkHash(ctx context.Context, arg LinkHashParams) error
+	GetUser(ctx context.Context, email sql.NullString) (User, error)
+	GetPassHash(ctx context.Context, email sql.NullString) (string, error)
 }

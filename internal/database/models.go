@@ -39,6 +39,12 @@ type Secret struct {
 	PassHash string
 }
 
+type Session struct {
+	UserID           uuid.NullUUID
+	EncryptedSession []byte
+	LoggedAt         time.Time
+}
+
 type User struct {
 	ID        uuid.UUID
 	CreatedAt time.Time

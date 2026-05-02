@@ -2,8 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"os"
 
+	"github.com/gorilla/sessions"
 	"github.com/knibirdgautam/library/internal/database"
 )
 
@@ -17,7 +20,7 @@ func HandleLogging(queries database.DBQueries) http.HandlerFunc {
 
 		type parameters struct {
 			Email    string `json:"email"`
-			password string `json:"password"`
+			Password string `json:"password"`
 		}
 
 		var params parameters
@@ -27,9 +30,51 @@ func HandleLogging(queries database.DBQueries) http.HandlerFunc {
 			RespondWithError(w, http.StatusBadRequest, "Couldn't Parse POST request")
 		}
 
-		
+		hash, err := queries.GetPassHash(r.Context(), database.ToNullString(params.Email))
+		if err != nil {
+			RespondWithError(w, http.StatusBadGateway, "User Not Found")
+			return
+		}
 
-		RespondWithJSON(w,400,pass)
+		if database.PasswordVerify(hash, []byte(params.Password)) == false {
+			return
+		}
+
+		//Standard Attributes for the Server
+		store := sessions.NewCookieStore([]byte(os.Getenv("KEY")))
+		store.Options = &sessions.Options{
+            Path:     "/",
+            MaxAge:   3600, // 1 hour
+            HttpOnly: true,
+            Secure:   true, // Set to true in production
+            SameSite: http.SameSiteStrictMode,
+        }
+
+		user, err := queries.GetUser(r.Context(), database.ToNullString(params.Email))
+		if err != nil {
+			RespondWithError(w, http.StatusBadGateway, "Failed to get user")
+			return
+		}
+
+		session, err := store.Get(r, "user-session")
+		if err != nil {
+			RespondWithError(w, http.StatusBadGateway, "Failed to get user")
+			return
+		}
+
+		session.Values["user_id"] = user.ID
+		session.Values["role"] = user.Role
+
+		err = session.Save(r, w)
+		if err != nil {
+			log.Printf("Failed Session Creation :{%s}", err)
+			RespondWithError(w, http.StatusInternalServerError, "Could not save session")
+			return
+		}
+
+		log.Print("Successfully Created Session")
+		RespondWithJSON(w, http.StatusOK, user)
+
 
 	}
 

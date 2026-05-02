@@ -10,6 +10,20 @@ import (
 	"database/sql"
 )
 
+const getPassHash = `-- name: GetPassHash :one
+SELECT pass_hash FROM secrets 
+JOIN users ON secrets.user_id = users.id
+WHERE users.email = $1
+LIMIT 1
+`
+
+func (q *Queries) GetPassHash(ctx context.Context, email sql.NullString) (string, error) {
+	row := q.db.QueryRowContext(ctx, getPassHash, email)
+	var pass_hash string
+	err := row.Scan(&pass_hash)
+	return pass_hash, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, created_at, updated_at, first_name, last_name, email, ph_no, role
 FROM users
