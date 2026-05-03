@@ -30,8 +30,6 @@ func HandleGetBooks(queries database.DBQueries) http.HandlerFunc {
 			return
 		}
 
-		
-
 		RespondWithJSON(w, http.StatusOK, book)
 	}
 }

@@ -10,6 +10,18 @@ import (
 	"github.com/knibirdgautam/library/internal/database"
 )
 
+var store = sessions.NewCookieStore([]byte(os.Getenv("KEY")))
+
+func init() {
+	store.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   3600, // 1 hour
+		HttpOnly: true,
+		Secure:   true, // Set to true in production
+		SameSite: http.SameSiteStrictMode,
+	}
+}
+
 func HandleLogging(queries database.DBQueries) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -40,16 +52,6 @@ func HandleLogging(queries database.DBQueries) http.HandlerFunc {
 			return
 		}
 
-		//Standard Attributes for the Server
-		store := sessions.NewCookieStore([]byte(os.Getenv("KEY")))
-		store.Options = &sessions.Options{
-            Path:     "/",
-            MaxAge:   3600, // 1 hour
-            HttpOnly: true,
-            Secure:   true, // Set to true in production
-            SameSite: http.SameSiteStrictMode,
-        }
-
 		user, err := queries.GetUser(r.Context(), database.ToNullString(params.Email))
 		if err != nil {
 			RespondWithError(w, http.StatusBadGateway, "Failed to get user")
@@ -62,8 +64,8 @@ func HandleLogging(queries database.DBQueries) http.HandlerFunc {
 			return
 		}
 
-		session.Values["user_id"] = user.ID
-		session.Values["role"] = user.Role
+		session.Values["Authenticated"] = true
+		session.Values["User_id"] = user.ID
 
 		err = session.Save(r, w)
 		if err != nil {
@@ -74,7 +76,6 @@ func HandleLogging(queries database.DBQueries) http.HandlerFunc {
 
 		log.Print("Successfully Created Session")
 		RespondWithJSON(w, http.StatusOK, user)
-
 
 	}
 

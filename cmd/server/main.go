@@ -73,11 +73,12 @@ func main() {
 	mux.HandleFunc("GET /status", api.HandleStatus(start))
 	mux.HandleFunc("POST /user/signup", api.HandleSignUp(apiCfg))
 	mux.HandleFunc("POST /user/login", api.HandleLogging(apiCfg))
-	mux.HandleFunc("POST /book", api.HandleCreateBooks(apiCfg))
-	mux.HandleFunc("GET /book/{id}", api.HandleGetBooks(apiCfg))
-	mux.HandleFunc("PUT /book/{id}", api.HandleUpdateBooks(apiCfg))
-	mux.HandleFunc("DELETE /book/{id}", api.HandleDeleteBook(apiCfg))
-	mux.HandleFunc("GET /author/{id}/books", api.HandleListOfAuthorBooks(apiCfg))
+
+	mux.Handle("POST /book", api.AuthedMiddleware(api.HandleCreateBooks(apiCfg)))
+	mux.Handle("GET /book/{id}", api.AuthedMiddleware(api.HandleGetBooks(apiCfg)))
+	mux.Handle("PUT /book/{id}", api.AuthedMiddleware(api.HandleUpdateBooks(apiCfg)))
+	mux.Handle("DELETE /book/{id}", api.AuthedMiddleware(api.HandleDeleteBook(apiCfg)))
+	mux.Handle("GET /author/{id}/books", api.AuthedMiddleware(api.HandleListOfAuthorBooks(apiCfg)))
 
 	wrappedMux := api.JSONMiddleware(mux)
 
