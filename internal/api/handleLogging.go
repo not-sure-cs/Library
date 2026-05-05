@@ -4,25 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/sessions"
 	"github.com/knibirdgautam/library/internal/database"
 )
 
-var store = sessions.NewCookieStore([]byte(os.Getenv("KEY")))
-
-func init() {
-	store.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   3600, // 1 hour
-		HttpOnly: true,
-		Secure:   true, // Set to true in production
-		SameSite: http.SameSiteStrictMode,
-	}
-}
-
-func HandleLogging(queries database.DBQueries) http.HandlerFunc {
+func HandleLogging(queries database.DBQueries, store *sessions.CookieStore) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

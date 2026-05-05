@@ -5,16 +5,14 @@ package database
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"io"
 	"log"
 	"mime/multipart"
-	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/knibirdgautam/library/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -58,7 +56,7 @@ func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) 
 	return i, err
 }
 
-const path = "Public/Books/"
+const path = "Assets/Books/"
 
 func GenerateFileName(id int64, now time.Time) string {
 
@@ -83,33 +81,26 @@ func (q *Queries) CountBook(ctx context.Context) (int64, error) {
 
 }
 
-func SaveFile(total int64, file multipart.File, handler *multipart.FileHeader) (string, error) {
+func SaveFile(total int64, r context.Context, secret storage.Secret, store storage.R2Store, file multipart.File, handler *multipart.FileHeader) (string, error) {
 
 	defer file.Close()
 
-	tempFolderPath := fmt.Sprintf("./%s", path)
-	tempFileName := fmt.Sprintf("upload-%s-*.%s", GenerateFileName(total, time.Now()), filepath.Ext(handler.Filename))
+	ext := filepath.Ext(handler.Filename)
+	name := GenerateFileName(total, time.Now()) + ext
+	key := path + name
 
-	tempFile, err := os.CreateTemp(tempFolderPath, tempFileName)
+	err := store.UploadFile(r, secret.Bucket, key, handler.Header.Get("contentType"), file)
 	if err != nil {
 		return "", err
 	}
 
-	defer tempFile.Close()
+	return key, nil
 
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-
-		return "", err
-	}
-
-	tempFile.Write(fileBytes)
-	return tempFile.Name(), nil
 }
 
 func PasswordHash(pass []byte) string {
 
-	hash, err := bcrypt.GenerateFromPassword(pass, bcrypt.MinCost) 
+	hash, err := bcrypt.GenerateFromPassword(pass, bcrypt.MinCost)
 	if err != nil {
 		log.Println(err)
 	}
@@ -118,7 +109,7 @@ func PasswordHash(pass []byte) string {
 
 func PasswordVerify(hash string, pass []byte) bool {
 	byteHash := []byte(hash)
-	err := bcrypt.CompareHashAndPassword(byteHash, pass) 
+	err := bcrypt.CompareHashAndPassword(byteHash, pass)
 	if err != nil {
 		log.Println(err)
 		return false

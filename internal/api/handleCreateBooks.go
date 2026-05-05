@@ -9,9 +9,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/knibirdgautam/library/internal/database"
+	"github.com/knibirdgautam/library/internal/storage"
 )
 
-func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
+func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret storage.Secret) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -48,9 +49,9 @@ func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 			return
 		}
 
-		path, err := database.SaveFile(num, file, fileHandler)
+		fileKey, err := database.SaveFile(num, r.Context(), secret, store, file, fileHandler)
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, fmt.Sprintf("Failed to Save the Uploaded File:%s", err))
+			RespondWithError(w, 500, "Upload failed")
 			return
 		}
 
@@ -91,7 +92,7 @@ func HandleCreateBooks(queries database.DBQueries) http.HandlerFunc {
 			UpdatedAt: time.Now(),
 			Name:      params.Title,
 			Isbn:      database.ToNullString(params.Isbn),
-			FilePath:  path,
+			FilePath:  fileKey,
 		})
 
 		if err != nil {
