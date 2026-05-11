@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -51,6 +52,8 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 
 		fileKey, err := database.SaveFile(num, r.Context(), secret, store, file, fileHandler)
 		if err != nil {
+
+			log.Printf("R2 Upload Error: %v", err)
 			RespondWithError(w, 500, "Upload failed")
 			return
 		}

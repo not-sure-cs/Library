@@ -112,22 +112,22 @@ func main() {
 	mux.HandleFunc("POST /user/signup", api.HandleSignUp(apiCfg))
 	mux.HandleFunc("POST /user/login", api.HandleLogging(apiCfg, store))
 
-	mux.Handle("POST /book", api.AuthedMiddleware(api.HandleCreateBooks(apiCfg, client, config),store))
-	mux.Handle("GET /book/{id}", api.AuthedMiddleware(api.HandleGetBooks(apiCfg),store))
-	mux.Handle("PUT /book/{id}", api.AuthedMiddleware(api.HandleUpdateBooks(apiCfg),store))
-	mux.Handle("DELETE /book/{id}", api.AuthedMiddleware(api.HandleDeleteBook(apiCfg),store))
-	mux.Handle("GET /author/{id}/books", api.AuthedMiddleware(api.HandleListOfAuthorBooks(apiCfg),store))
+	mux.Handle("POST /book", api.AuthedMiddleware(api.HandleCreateBooks(apiCfg, client, config), store))
+	mux.Handle("GET /book/{id}", api.AuthedMiddleware(api.HandleGetBooks(apiCfg, client, config), store))
+	mux.Handle("PUT /book/{id}", api.AuthedMiddleware(api.HandleUpdateBooks(apiCfg), store))
+	mux.Handle("DELETE /book/{id}", api.AuthedMiddleware(api.HandleDeleteBook(apiCfg), store))
+	//mux.Handle("GET /author/{id}/books", api.AuthedMiddleware(api.HandleListOfAuthorBooks(apiCfg),store))
 
 	wrappedMux := api.JSONMiddleware(mux)
 
 	srv := http.Server{
-		Addr:              ":" + portString,
-		Handler:           wrappedMux,
-		ReadTimeout:       5 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       3 * time.Minute,
-		ReadHeaderTimeout: 5 * time.Second,
-		MaxHeaderBytes:    1 << 20,
+		Addr:    ":" + portString,
+		Handler: wrappedMux,
+		//ReadTimeout:       5 * time.Minute,
+		//WriteTimeout:      10 * time.Minute,
+		//IdleTimeout:       3 * time.Minute,
+		//ReadHeaderTimeout: 5 * time.Minute,
+		//MaxHeaderBytes:    1 << 20,
 	}
 
 	fmt.Printf("Starting Server on Port: %s\n", portString)

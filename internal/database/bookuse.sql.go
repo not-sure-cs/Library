@@ -62,7 +62,7 @@ func (q *Queries) GetAuthorBooks(ctx context.Context, id uuid.UUID) ([]GetAuthor
 }
 
 const getBook = `-- name: GetBook :one
-SELECT books.name,authors.name,isbn,books.created_at,books.updated_at,book_id FROM book_authors 
+SELECT books.name,authors.name,isbn,books.created_at,books.updated_at,book_id,file_path FROM book_authors 
 JOIN books ON book_authors.book_id = books.id
 JOIN authors ON book_authors.author_id = author_id
 WHERE books.id = $1
@@ -76,6 +76,7 @@ type GetBookRow struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	BookID    uuid.UUID
+	FilePath  string
 }
 
 func (q *Queries) GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error) {
@@ -88,6 +89,7 @@ func (q *Queries) GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error)
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.BookID,
+		&i.FilePath,
 	)
 	return i, err
 }
