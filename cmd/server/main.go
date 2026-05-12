@@ -114,8 +114,8 @@ func main() {
 
 	mux.Handle("POST /book", api.AuthedMiddleware(api.HandleCreateBooks(apiCfg, client, config), store))
 	mux.Handle("GET /book/{id}", api.AuthedMiddleware(api.HandleGetBooks(apiCfg, client, config), store))
-	mux.Handle("PUT /book/{id}", api.AuthedMiddleware(api.HandleUpdateBooks(apiCfg), store))
-	mux.Handle("DELETE /book/{id}", api.AuthedMiddleware(api.HandleDeleteBook(apiCfg), store))
+	mux.Handle("PUT /book/{id}", api.AuthedMiddleware(api.HandleUpdateBook(apiCfg), store))
+	mux.Handle("DELETE /book/{id}", api.AuthedMiddleware(api.HandleDeleteBook(apiCfg, client, config), store))
 	//mux.Handle("GET /author/{id}/books", api.AuthedMiddleware(api.HandleListOfAuthorBooks(apiCfg),store))
 
 	wrappedMux := api.JSONMiddleware(mux)

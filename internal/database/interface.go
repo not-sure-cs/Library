@@ -20,7 +20,7 @@ type DBQueries interface {
 	GetMetaData(ctx context.Context, id uuid.UUID) (GetMetaDataRow, error)
 	GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
-	UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) (Book, error)
+	UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) (UserBook, error)
 	CountBook(ctx context.Context) (int64, error)
 	LinkHash(ctx context.Context, arg LinkHashParams) error
 	GetUser(ctx context.Context, email sql.NullString) (User, error)
