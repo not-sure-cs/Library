@@ -13,5 +13,6 @@ WHERE authors.id = $1;
 -- name: GetMetaData :one
 SELECT books.file_path, books.mime_type FROM books
 JOIN book_authors ON book_authors.book_id = books.id
-WHERE book_authors.api_key = $1
+WHERE books.id = $1
 LIMIT 1;
+

@@ -35,25 +35,34 @@ type Parameters struct {
 }
 
 const updateBook = `
-	UPDATE books
-	SET name = $1, isbn = $2, updated_at = NOW()
-	WHERE id = $3
-	RETURNING id, created_at, updated_at, name, isbn
+    WITH updated_book AS (
+        UPDATE books
+        SET name = $1, isbn = $2, updated_at = NOW()
+        WHERE id = $3
+        RETURNING id, name, isbn
+    )
+    SELECT 
+        ub.name, 
+        ub.isbn, 
+        a.name as author_name
+    FROM updated_book ub
+    JOIN book_authors ba ON ub.id = ba.book_id
+    JOIN authors a ON ba.author_id = a.id;
 `
 
-func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) (Book, error) {
+func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) (UserBook, error) {
 
 	row := q.db.QueryRowContext(ctx, updateBook, arg.Title, ToNullString(arg.Isbn), id)
 
-	var i Book
+	var ub UserBook
 	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Name,
-		&i.Isbn,
+		&ub.BookName,
+		&ub.ISBN,
+		&ub.AuthorName,
 	)
-	return i, err
+
+	return ub, err
+
 }
 
 const path = "Assets/Books/"
@@ -95,6 +104,16 @@ func SaveFile(total int64, r context.Context, secret storage.Secret, store stora
 	}
 
 	return key, nil
+
+}
+
+func UnsaveFile(r context.Context, secret storage.Secret, store storage.R2Store, filename string) error {
+	err := store.DeleteFile(r, secret.Bucket, filename)
+	if err != nil {
+		return err
+	}
+
+	return nil
 
 }
 

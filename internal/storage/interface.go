@@ -8,7 +8,7 @@ import (
 )
 
 type store interface {
-	UploadFile(ctx context.Context, client *s3.Client, bucketName string, key string, file io.Reader) error
-	DeleteFile(ctx context.Context, client *s3.Client, bucketName string, key string, file io.Reader) error
+	UploadFile(ctx context.Context, bucketName string, key string, contentType string, file io.Reader) error
+	DeleteFile(ctx context.Context, client *s3.Client, bucketName string, key string) error
 	GetDownloadURL(ctx context.Context, client *s3.Client, bucketName string, fileName string) (string, error)
 }

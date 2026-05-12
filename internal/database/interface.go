@@ -17,6 +17,7 @@ type DBQueries interface {
 	LinkBookAuthor(ctx context.Context, arg LinkBookAuthorParams) (BookAuthor, error)
 	UnlinkBook(ctx context.Context, bookID uuid.UUID) error
 	GetAuthorBooks(ctx context.Context, id uuid.UUID) ([]GetAuthorBooksRow, error)
+	GetMetaData(ctx context.Context, id uuid.UUID) (GetMetaDataRow, error)
 	GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) (Book, error)
