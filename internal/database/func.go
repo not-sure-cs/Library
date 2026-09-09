@@ -28,6 +28,14 @@ func ToNullString(s string) sql.NullString {
 	return r
 }
 
+func ToNullInt16(s int16) sql.NullInt16 {
+	var r sql.NullInt16
+
+	r.Int16 = s
+	r.Valid = true
+	return r
+}
+
 type Parameters struct {
 	Title  string `json:"title"`
 	Isbn   string `json:"isbn"`

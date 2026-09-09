@@ -53,6 +53,7 @@ func HandleLogging(queries database.DBQueries, store *sessions.CookieStore) http
 
 		session.Values["Authenticated"] = true
 		session.Values["User_id"] = user.ID
+		session.Values["User_Role"] = string(user.Role)
 
 		err = session.Save(r, w)
 		if err != nil {

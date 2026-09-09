@@ -59,9 +59,12 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 		}
 
 		type parameters struct {
-			Title  string `json:"title"`
-			Isbn   string `json:"isbn"`
-			Author string `json:"author"`
+			Title    string `json:"title"`
+			Isbn     string `json:"isbn"`
+			Author   string `json:"author"`
+			Genre    string `json:"genre"`
+			Category string `json:"category"`
+			PubYear  int16  `json:"pub_year"`
 		}
 		jsonStr := r.FormValue("metadata")
 		params := parameters{}
@@ -96,6 +99,9 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 			Name:      params.Title,
 			Isbn:      database.ToNullString(params.Isbn),
 			FilePath:  fileKey,
+			Genre:     params.Genre,
+			Category:  params.Category,
+			PubYear:   params.PubYear,
 		})
 
 		if err != nil {

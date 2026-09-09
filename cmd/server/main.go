@@ -108,14 +108,17 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	requireModOrAdmin := api.RequireRoles(store, database.UserRoleModerator, database.UserRoleAdmin)
+	//requireAdmin := api.RequireRoles(store, database.UserRoleAdmin)
+
 	mux.HandleFunc("GET /status", api.HandleStatus(start))
 	mux.HandleFunc("POST /user/signup", api.HandleSignUp(apiCfg))
 	mux.HandleFunc("POST /user/login", api.HandleLogging(apiCfg, store))
 
 	mux.Handle("POST /book", api.AuthedMiddleware(api.HandleCreateBooks(apiCfg, client, config), store))
 	mux.Handle("GET /book/{id}", api.AuthedMiddleware(api.HandleGetBooks(apiCfg, client, config), store))
-	mux.Handle("PUT /book/{id}", api.AuthedMiddleware(api.HandleUpdateBook(apiCfg), store))
-	mux.Handle("DELETE /book/{id}", api.AuthedMiddleware(api.HandleDeleteBook(apiCfg, client, config), store))
+	mux.Handle("PUT /book/{id}", api.AuthedMiddleware(requireModOrAdmin(api.HandleUpdateBook(apiCfg)), store))
+	mux.Handle("DELETE /book/{id}", api.AuthedMiddleware(requireModOrAdmin(api.HandleDeleteBook(apiCfg, client, config)), store))
 	//mux.Handle("GET /author/{id}/books", api.AuthedMiddleware(api.HandleListOfAuthorBooks(apiCfg),store))
 
 	wrappedMux := api.JSONMiddleware(mux)
