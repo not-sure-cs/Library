@@ -3,12 +3,10 @@ package storage
 import (
 	"context"
 	"io"
-
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-type store interface {
+type Store interface {
 	UploadFile(ctx context.Context, bucketName string, key string, contentType string, file io.Reader) error
-	DeleteFile(ctx context.Context, client *s3.Client, bucketName string, key string) error
-	GetDownloadURL(ctx context.Context, client *s3.Client, bucketName string, fileName string) (string, error)
+	DeleteFile(ctx context.Context, bucketName string, key string) error
+	GetDownloadURL(ctx context.Context, bucketName string, fileName string) (string, error)
 }

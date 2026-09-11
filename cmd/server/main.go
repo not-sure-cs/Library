@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/gob"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,28 +32,23 @@ func main() {
 	start := time.Now()
 
 	err := godotenv.Load()
+	if err != nil {
+		log.Println("Notice: .env file not found or couldn't be loaded, using process environment variables")
+	}
 
 	sessionKey := os.Getenv("KEY")
-
 	if sessionKey == "" {
 		log.Fatal("KEY not found in environment")
 	}
 	store := sessions.NewCookieStore([]byte(sessionKey))
 
+	isProd := os.Getenv("ENV") == "production"
 	store.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   3600, // 1 hour
 		HttpOnly: true,
-		Secure:   true, // Set to true in production
-		SameSite: http.SameSiteStrictMode,
-	}
-
-	//type srvParams struct {
-
-	//}
-
-	if err != nil {
-		log.Println("Error loading .env file, proceeding without it")
+		Secure:   isProd,
+		SameSite: http.SameSiteLaxMode,
 	}
 
 	portString := os.Getenv("PORT")
@@ -71,9 +69,13 @@ func main() {
 
 	conn, err := sql.Open("pgx", dbURL)
 	if err != nil {
-
 		log.Fatal("Cant connect to Database")
 	}
+	defer conn.Close()
+
+	conn.SetMaxOpenConns(25)
+	conn.SetMaxIdleConns(25)
+	conn.SetConnMaxLifetime(5 * time.Minute)
 
 	if err := conn.Ping(); err != nil {
 		log.Fatalf("Cannot reach Database: %v", err)
@@ -109,7 +111,6 @@ func main() {
 	mux := http.NewServeMux()
 
 	requireModOrAdmin := api.RequireRoles(store, database.UserRoleModerator, database.UserRoleAdmin)
-	//requireAdmin := api.RequireRoles(store, database.UserRoleAdmin)
 
 	mux.HandleFunc("GET /status", api.HandleStatus(start))
 	mux.HandleFunc("POST /user/signup", api.HandleSignUp(apiCfg))
@@ -119,22 +120,44 @@ func main() {
 	mux.Handle("GET /book/{id}", api.AuthedMiddleware(api.HandleGetBooks(apiCfg, client, config), store))
 	mux.Handle("PUT /book/{id}", api.AuthedMiddleware(requireModOrAdmin(api.HandleUpdateBook(apiCfg)), store))
 	mux.Handle("DELETE /book/{id}", api.AuthedMiddleware(requireModOrAdmin(api.HandleDeleteBook(apiCfg, client, config)), store))
-	//mux.Handle("GET /author/{id}/books", api.AuthedMiddleware(api.HandleListOfAuthorBooks(apiCfg),store))
 
 	wrappedMux := api.JSONMiddleware(mux)
 
 	srv := http.Server{
-		Addr:    ":" + portString,
-		Handler: wrappedMux,
-		//ReadTimeout:       5 * time.Minute,
-		//WriteTimeout:      10 * time.Minute,
-		//IdleTimeout:       3 * time.Minute,
-		//ReadHeaderTimeout: 5 * time.Minute,
-		//MaxHeaderBytes:    1 << 20,
+		Addr:              ":" + portString,
+		Handler:           wrappedMux,
+		ReadTimeout:       5 * time.Minute,
+		WriteTimeout:      10 * time.Minute,
+		IdleTimeout:       3 * time.Minute,
+		ReadHeaderTimeout: 5 * time.Minute,
 	}
 
-	fmt.Printf("Starting Server on Port: %s\n", portString)
+	shutdownCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	srv.ListenAndServe()
+	serverErrors := make(chan error, 1)
+	go func() {
+		fmt.Printf("Starting Server on Port: %s\n", portString)
+		serverErrors <- srv.ListenAndServe()
+	}()
 
+	select {
+	case err := <-serverErrors:
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatalf("[Server] Server error: %v", err)
+		}
+	case <-shutdownCtx.Done():
+		log.Println("[Server] Shutdown signal received, gracefully terminating...")
+
+		stopCtx, cancelStop := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancelStop()
+
+		if err := srv.Shutdown(stopCtx); err != nil {
+			log.Printf("[Server] Forced server shutdown error: %v\n", err)
+		} else {
+			log.Println("[Server] HTTP server stopped cleanly")
+		}
+	}
+
+	log.Println("[Server] Server stopped")
 }

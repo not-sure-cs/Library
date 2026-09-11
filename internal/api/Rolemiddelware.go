@@ -10,10 +10,18 @@ import (
 func RequireRoles(store *sessions.CookieStore, RequiredRoles ...database.UserRole) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			session, _ := store.Get(r, "user-session")
+			session, err := store.Get(r, "user-session")
+			if err != nil || session == nil {
+				RespondWithError(w, http.StatusUnauthorized, "Unauthorized: Invalid session")
+				return
+			}
 
-			roleStr, ok := session.Values["user_role"].(string)
-			if !ok {
+			var roleStr string
+			if r, ok := session.Values["user_role"].(string); ok {
+				roleStr = r
+			} else if r, ok := session.Values["User_Role"].(string); ok {
+				roleStr = r
+			} else {
 				RespondWithError(w, http.StatusForbidden, "Forbidden: Missing role information")
 				return
 			}

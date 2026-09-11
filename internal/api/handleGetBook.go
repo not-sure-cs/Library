@@ -32,6 +32,10 @@ func HandleGetBooks(queries database.DBQueries, store storage.R2Store, secret st
 		}
 
 		URL, err := store.GetDownloadURL(r.Context(), secret.Bucket, book.FilePath)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Failed to generate download URL")
+			return
+		}
 
 		userBook := database.UserBook{
 			BookName:   book.Name,

@@ -21,57 +21,48 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 			return
 		}
 
-		countChannel := make(chan int64, 1)
-		errChannel := make(chan error, 1)
-
-		go func() {
-			num, err := queries.CountBook(r.Context())
-			if err != nil {
-				errChannel <- err
-				return
-			}
-			countChannel <- num
-		}()
-
-		r.ParseMultipartForm(200 << 20)
+		err := r.ParseMultipartForm(200 << 20)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Failed to parse multipart form")
+			return
+		}
 
 		file, fileHandler, err := r.FormFile("uploadFile")
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Failed to Marshal File Response")
+			RespondWithError(w, http.StatusBadRequest, "uploadFile is required")
 			return
 		}
-
-		var num int64
-		select {
-		case num = <-countChannel:
-
-		case err = <-errChannel:
-			RespondWithError(w, http.StatusBadRequest, "Couldn't Count Books")
-			return
-		}
-
-		fileKey, err := database.SaveFile(num, r.Context(), secret, store, file, fileHandler)
-		if err != nil {
-
-			log.Printf("R2 Upload Error: %v", err)
-			RespondWithError(w, 500, "Upload failed")
-			return
-		}
+		defer file.Close()
 
 		type parameters struct {
-			Title    string `json:"title"`
-			Isbn     string `json:"isbn"`
-			Author   string `json:"author"`
-			Genre    string `json:"genre"`
-			Category string `json:"category"`
-			PubYear  int16  `json:"pub_year"`
+			Title        string `json:"title"`
+			Isbn         string `json:"isbn"`
+			Author       string `json:"author"`
+			CategoryCode string `json:"category_code"`
+			PubYear      int16  `json:"pub_year"`
 		}
 		jsonStr := r.FormValue("metadata")
-		params := parameters{}
+		if jsonStr == "" {
+			RespondWithError(w, http.StatusBadRequest, "Missing metadata form value")
+			return
+		}
 
+		params := parameters{}
 		err = json.NewDecoder(strings.NewReader(jsonStr)).Decode(&params)
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "Failed to Decode JSON Body")
+			return
+		}
+
+		if params.Title == "" || params.Author == "" {
+			RespondWithError(w, http.StatusBadRequest, "Title and Author are required")
+			return
+		}
+
+		fileKey, err := database.SaveFile(0, r.Context(), secret, store, file, fileHandler)
+		if err != nil {
+			log.Printf("R2 Upload Error: %v", err)
+			RespondWithError(w, http.StatusInternalServerError, "Upload failed")
 			return
 		}
 
@@ -87,25 +78,25 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 			})
 
 			if err != nil {
+				_ = database.UnsaveFile(r.Context(), secret, store, fileKey)
 				RespondWithError(w, http.StatusInternalServerError, "Could not Create Author")
 				return
 			}
 		}
 
 		book, err := queries.CreateBook(r.Context(), database.CreateBookParams{
-			ID:        uuid.New(),
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-			Name:      params.Title,
-			Isbn:      database.ToNullString(params.Isbn),
-			FilePath:  fileKey,
-			Genre:     params.Genre,
-			Category:  params.Category,
-			PubYear:   params.PubYear,
+			ID:           uuid.New(),
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+			Name:         params.Title,
+			Isbn:         database.ToNullString(params.Isbn),
+			FilePath:     fileKey,
+			CategoryCode: params.CategoryCode,
+			PubYear:      params.PubYear,
 		})
 
 		if err != nil {
-
+			_ = database.UnsaveFile(r.Context(), secret, store, fileKey)
 			RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("DBError: %s", err))
 			return
 		}
@@ -116,6 +107,7 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 		})
 
 		if err != nil {
+			_ = database.UnsaveFile(r.Context(), secret, store, fileKey)
 			RespondWithError(w, http.StatusInternalServerError, "Couldn't link Books and Authors")
 			return
 		}
@@ -126,6 +118,6 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 			Link:   linker,
 		}
 
-		RespondWithJSON(w, http.StatusOK, resp)
+		RespondWithJSON(w, http.StatusCreated, resp)
 	}
 }

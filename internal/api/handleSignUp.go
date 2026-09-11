@@ -30,6 +30,25 @@ func HandleSignUp(queries database.DBQueries) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&params)
 		if err != nil {
 			RespondWithError(w, http.StatusBadRequest, "Couldn't Parse POST request")
+			return
+		}
+
+		if params.FirstName == "" || params.LastName == "" || params.Email == "" || params.Password == "" {
+			RespondWithError(w, http.StatusBadRequest, "First name, last name, email, and password are required")
+			return
+		}
+
+		// Verify email uniqueness at application layer
+		_, err = queries.GetUser(r.Context(), database.ToNullString(params.Email))
+		if err == nil {
+			RespondWithError(w, http.StatusConflict, "User with this email already exists")
+			return
+		}
+
+		passHash, err := database.PasswordHash([]byte(params.Password))
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Failed to process password")
+			return
 		}
 
 		user, err := queries.CreateUser(r.Context(), database.CreateUserParams{
@@ -41,20 +60,20 @@ func HandleSignUp(queries database.DBQueries) http.HandlerFunc {
 			Email:     database.ToNullString(params.Email),
 			PhNo:      database.ToNullString(params.Phone),
 		})
-
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Failed to Create User")
+			RespondWithError(w, http.StatusBadRequest, "Failed to Create User: "+err.Error())
+			return
 		}
 
 		err = queries.LinkHash(r.Context(), database.LinkHashParams{
 			UserID:   user.ID,
-			PassHash: database.PasswordHash([]byte(params.Password)),
+			PassHash: passHash,
 		})
-
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Unexpected Failure")
+			RespondWithError(w, http.StatusInternalServerError, "Unexpected Failure saving credentials")
+			return
 		}
 
-		RespondWithJSON(w, http.StatusAccepted, user)
+		RespondWithJSON(w, http.StatusCreated, user)
 	}
 }

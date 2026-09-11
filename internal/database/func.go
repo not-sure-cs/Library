@@ -8,7 +8,6 @@ import (
 	"log"
 	"mime/multipart"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,13 +51,36 @@ const updateBook = `
     SELECT 
         ub.name, 
         ub.isbn, 
-        a.name as author_name
+        COALESCE(a.name, '') as author_name
     FROM updated_book ub
-    JOIN book_authors ba ON ub.id = ba.book_id
-    JOIN authors a ON ba.author_id = a.id;
+    LEFT JOIN book_authors ba ON ub.id = ba.book_id
+    LEFT JOIN authors a ON ba.author_id = a.id
+    LIMIT 1;
 `
 
 func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) (UserBook, error) {
+	if arg.Author != "" {
+		author, err := q.GetAuthor(ctx, arg.Author)
+		if err != nil {
+			author, err = q.CreateAuthor(ctx, CreateAuthorParams{
+				ID:        uuid.New(),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+				Name:      arg.Author,
+			})
+			if err != nil {
+				return UserBook{}, err
+			}
+		}
+		_ = q.UnlinkBook(ctx, id)
+		_, err = q.LinkBookAuthor(ctx, LinkBookAuthorParams{
+			BookID:   id,
+			AuthorID: author.ID,
+		})
+		if err != nil {
+			return UserBook{}, err
+		}
+	}
 
 	row := q.db.QueryRowContext(ctx, updateBook, arg.Title, ToNullString(arg.Isbn), id)
 
@@ -70,18 +92,12 @@ func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) 
 	)
 
 	return ub, err
-
 }
 
 const path = "Assets/Books/"
 
 func GenerateFileName(id int64, now time.Time) string {
-
-	t := now.Unix()
-
-	fileName := "Type-Book" + strconv.Itoa(int(id)) + strconv.Itoa(int(t))
-	return fileName
-
+	return "Type-Book-" + uuid.New().String()
 }
 
 const countBook = `
@@ -89,30 +105,29 @@ const countBook = `
 `
 
 func (q *Queries) CountBook(ctx context.Context) (int64, error) {
-
 	var store int64
 	row := q.db.QueryRowContext(ctx, countBook)
 
 	err := row.Scan(&store)
 	return store, err
-
 }
 
 func SaveFile(total int64, r context.Context, secret storage.Secret, store storage.R2Store, file multipart.File, handler *multipart.FileHeader) (string, error) {
-
-	defer file.Close()
-
 	ext := filepath.Ext(handler.Filename)
 	name := GenerateFileName(total, time.Now()) + ext
 	key := path + name
 
-	err := store.UploadFile(r, secret.Bucket, key, handler.Header.Get("contentType"), file)
+	contentType := handler.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	err := store.UploadFile(r, secret.Bucket, key, contentType, file)
 	if err != nil {
 		return "", err
 	}
 
 	return key, nil
-
 }
 
 func UnsaveFile(r context.Context, secret storage.Secret, store storage.R2Store, filename string) error {
@@ -122,16 +137,15 @@ func UnsaveFile(r context.Context, secret storage.Secret, store storage.R2Store,
 	}
 
 	return nil
-
 }
 
-func PasswordHash(pass []byte) string {
-
-	hash, err := bcrypt.GenerateFromPassword(pass, bcrypt.MinCost)
+func PasswordHash(pass []byte) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword(pass, bcrypt.DefaultCost)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Bcrypt password generation error: %v", err)
+		return "", err
 	}
-	return string(hash)
+	return string(hash), nil
 }
 
 func PasswordVerify(hash string, pass []byte) bool {
@@ -142,5 +156,4 @@ func PasswordVerify(hash string, pass []byte) bool {
 		return false
 	}
 	return true
-
 }

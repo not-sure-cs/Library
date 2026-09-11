@@ -64,16 +64,15 @@ type Author struct {
 }
 
 type Book struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Name      string
-	Isbn      sql.NullString
-	FilePath  string
-	MimeType  sql.NullString
-	Genre     string
-	Category  string
-	PubYear   int16
+	ID           uuid.UUID
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	Name         string
+	Isbn         sql.NullString
+	FilePath     string
+	MimeType     sql.NullString
+	PubYear      int16
+	CategoryCode string
 }
 
 type BookAuthor struct {

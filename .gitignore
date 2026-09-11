@@ -1,6 +1,9 @@
 #text files
 .txt
 
+#images
+.jpg
+
 # Environment files
 .env
 
@@ -18,5 +21,7 @@ main
 
 #folder
 Public/
+internal/api/test
 
-
+#project summary
+/project_summary.md

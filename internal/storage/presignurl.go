@@ -73,6 +73,7 @@ func (presigner Presigner) PresignPostObject(ctx context.Context, bucketName str
 	})
 	if err != nil {
 		log.Printf("Couldn't get a presigned post request to put %v:%v. Here's why: %v\n", bucketName, objectKey, err)
+		return nil, err
 	}
 	return request, nil
 }

@@ -27,29 +27,27 @@ func HandleDeleteBook(queries database.DBQueries, store storage.R2Store, secret 
 
 		metadata, err := queries.GetMetaData(r.Context(), id)
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Failed To Get Metadata")
-			return
-		}
-
-		err = database.UnsaveFile(r.Context(), secret, store, metadata.FilePath)
-		if err != nil {
-			log.Printf("File deletion failed with:%v",err)
-			RespondWithError(w, http.StatusBadRequest, "Failed To Execute Unsave")
+			RespondWithError(w, http.StatusNotFound, "Book not found")
 			return
 		}
 
 		err = queries.UnlinkBook(r.Context(), id)
-
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Couldn't Unlink book")
+			RespondWithError(w, http.StatusInternalServerError, "Couldn't Unlink book")
 			return
 		}
 
 		err = queries.DeleteBook(r.Context(), id)
-
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Couldn't Delete book")
+			RespondWithError(w, http.StatusInternalServerError, "Couldn't Delete book")
 			return
+		}
+
+		if metadata.FilePath != "" {
+			err = database.UnsaveFile(r.Context(), secret, store, metadata.FilePath)
+			if err != nil {
+				log.Printf("File deletion from storage failed with: %v", err)
+			}
 		}
 
 		RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Book deleted"})

@@ -16,7 +16,7 @@ import (
 const getAuthorBooks = `-- name: GetAuthorBooks :many
 SELECT books.name,authors.name,isbn,books.created_at,books.updated_at,book_id,author_id FROM book_authors 
 JOIN books ON book_authors.book_id = books.id
-JOIN authors ON book_authors.author_id = author.id
+JOIN authors ON book_authors.author_id = authors.id
 WHERE authors.id = $1
 `
 
@@ -64,7 +64,7 @@ func (q *Queries) GetAuthorBooks(ctx context.Context, id uuid.UUID) ([]GetAuthor
 const getBook = `-- name: GetBook :one
 SELECT books.name,authors.name,isbn,books.created_at,books.updated_at,book_id,file_path FROM book_authors 
 JOIN books ON book_authors.book_id = books.id
-JOIN authors ON book_authors.author_id = author_id
+JOIN authors ON book_authors.author_id = authors.id
 WHERE books.id = $1
 LIMIT 1
 `
@@ -95,9 +95,8 @@ func (q *Queries) GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error)
 }
 
 const getMetaData = `-- name: GetMetaData :one
-SELECT books.file_path, books.mime_type FROM books
-JOIN book_authors ON book_authors.book_id = books.id
-WHERE books.id = $1
+SELECT file_path, mime_type FROM books
+WHERE id = $1
 LIMIT 1
 `
 
