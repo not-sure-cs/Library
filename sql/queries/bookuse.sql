@@ -42,3 +42,7 @@ SELECT file_path, mime_type FROM books
 WHERE id = $1
 LIMIT 1;
 
+-- name: CheckApiKeyExists :one
+SELECT EXISTS (
+  SELECT 1 FROM book_authors WHERE api_key = $1
+)AS exists;

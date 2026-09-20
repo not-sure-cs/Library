@@ -21,7 +21,7 @@ main
 
 #folder
 Public/
-internal/api/test
+./internal/api/test
 
 #project summary
 /project_summary.md

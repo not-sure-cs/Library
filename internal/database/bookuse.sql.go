@@ -13,6 +13,19 @@ import (
 	"github.com/google/uuid"
 )
 
+const checkApiKeyExists = `-- name: CheckApiKeyExists :one
+SELECT EXISTS (
+  SELECT 1 FROM book_authors WHERE api_key = $1
+)AS exists
+`
+
+func (q *Queries) CheckApiKeyExists(ctx context.Context, apiKey string) (bool, error) {
+	row := q.db.QueryRowContext(ctx, checkApiKeyExists, apiKey)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const getAuthorBooks = `-- name: GetAuthorBooks :many
 SELECT 
     books.id,

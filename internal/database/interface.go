@@ -25,4 +25,5 @@ type DBQueries interface {
 	LinkHash(ctx context.Context, arg LinkHashParams) error
 	GetUser(ctx context.Context, email sql.NullString) (User, error)
 	GetPassHash(ctx context.Context, email sql.NullString) (string, error)
+	CheckApiKeyExists(ctx context.Context, apiKey string) (bool, error)
 }

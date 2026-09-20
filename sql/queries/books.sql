@@ -15,8 +15,8 @@ WHERE name = $1
 LIMIT 1;
 
 -- name: LinkBookAuthor :one
-INSERT INTO book_authors (book_id, author_id)
-VALUES($1, $2)
+INSERT INTO book_authors (book_id, author_id, api_key)
+VALUES($1, $2, $3)
 RETURNING *;
 
 -- name: DeleteBook :exec

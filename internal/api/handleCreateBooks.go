@@ -43,6 +43,22 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 			return
 		}
 
+		fileHash, err := extraction.GenerateSHA256FileHash(fileHandler)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Failed the Filehash function")
+			return
+		}
+
+		exists, err := queries.CheckApiKeyExists(r.Context(), fileHash)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Failed the key check")
+		}
+
+		if exists != false {
+			log.Print("File Already Exists")
+			return
+		}
+
 		var meta *extraction.BookMetaData
 		if mimeType == "application/pdf" {
 			meta, err = extraction.ExtractMetadata(file, fileHandler)
@@ -133,6 +149,7 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 		linker, err := queries.LinkBookAuthor(r.Context(), database.LinkBookAuthorParams{
 			BookID:   book.ID,
 			AuthorID: author.ID,
+			ApiKey:   fileHash,
 		})
 
 		if err != nil {

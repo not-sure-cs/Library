@@ -123,18 +123,19 @@ func (q *Queries) GetAuthor(ctx context.Context, name string) (Author, error) {
 }
 
 const linkBookAuthor = `-- name: LinkBookAuthor :one
-INSERT INTO book_authors (book_id, author_id)
-VALUES($1, $2)
+INSERT INTO book_authors (book_id, author_id, api_key)
+VALUES($1, $2, $3)
 RETURNING book_id, author_id, api_key
 `
 
 type LinkBookAuthorParams struct {
 	BookID   uuid.UUID
 	AuthorID uuid.UUID
+	ApiKey   string
 }
 
 func (q *Queries) LinkBookAuthor(ctx context.Context, arg LinkBookAuthorParams) (BookAuthor, error) {
-	row := q.db.QueryRowContext(ctx, linkBookAuthor, arg.BookID, arg.AuthorID)
+	row := q.db.QueryRowContext(ctx, linkBookAuthor, arg.BookID, arg.AuthorID, arg.ApiKey)
 	var i BookAuthor
 	err := row.Scan(&i.BookID, &i.AuthorID, &i.ApiKey)
 	return i, err
