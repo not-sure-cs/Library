@@ -35,23 +35,51 @@ func ToNullInt16(s int16) sql.NullInt16 {
 	return r
 }
 
+func ToNullInt32(s int32) sql.NullInt32 {
+	var r sql.NullInt32
+	if s == 0 {
+		r.Valid = false
+		return r
+	}
+
+	r.Int32 = s
+	r.Valid = true
+	return r
+}
+
 type Parameters struct {
-	Title  string `json:"title"`
-	Isbn   string `json:"isbn"`
-	Author string `json:"author"`
+	Title     string `json:"title"`
+	Isbn      string `json:"isbn"`
+	Author    string `json:"author"`
+	Subject   string `json:"subject,omitempty"`
+	Producer  string `json:"producer,omitempty"`
+	PageCount int32  `json:"page_count,omitempty"`
 }
 
 const updateBook = `
     WITH updated_book AS (
         UPDATE books
-        SET name = $1, isbn = $2, updated_at = NOW()
-        WHERE id = $3
-        RETURNING id, name, isbn
+        SET name = COALESCE(NULLIF($1, ''), name),
+            isbn = CASE WHEN $2::text = '' THEN isbn ELSE $2 END,
+            subject = COALESCE(NULLIF($3, ''), subject),
+            producer = COALESCE(NULLIF($4, ''), producer),
+            page_count = CASE WHEN $5::int <= 0 THEN page_count ELSE $5 END,
+            updated_at = NOW()
+        WHERE id = $6
+        RETURNING id, name, isbn, file_path, mime_type, page_count, producer, subject, pdf_version, created_at, updated_at
     )
     SELECT 
-        ub.name, 
-        ub.isbn, 
-        COALESCE(a.name, '') as author_name
+        ub.id,
+        ub.name AS book_name, 
+        COALESCE(a.name, '') as author_name,
+        ub.isbn,
+        ub.mime_type,
+        ub.page_count,
+        ub.producer,
+        ub.subject,
+        ub.pdf_version,
+        ub.created_at,
+        ub.updated_at
     FROM updated_book ub
     LEFT JOIN book_authors ba ON ub.id = ba.book_id
     LEFT JOIN authors a ON ba.author_id = a.id
@@ -82,17 +110,33 @@ func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) 
 		}
 	}
 
-	row := q.db.QueryRowContext(ctx, updateBook, arg.Title, ToNullString(arg.Isbn), id)
+	row := q.db.QueryRowContext(ctx, updateBook,
+		arg.Title,
+		arg.Isbn,
+		arg.Subject,
+		arg.Producer,
+		arg.PageCount,
+		id,
+	)
 
 	var ub UserBook
 	err := row.Scan(
+		&ub.ID,
 		&ub.BookName,
-		&ub.ISBN,
 		&ub.AuthorName,
+		&ub.ISBN,
+		&ub.MimeType,
+		&ub.PageCount,
+		&ub.Producer,
+		&ub.Subject,
+		&ub.PdfVersion,
+		&ub.CreatedAt,
+		&ub.UpdatedAt,
 	)
 
 	return ub, err
 }
+
 
 const path = "Assets/Books/"
 

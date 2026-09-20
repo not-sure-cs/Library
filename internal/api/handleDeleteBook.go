@@ -1,6 +1,8 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 
@@ -27,7 +29,11 @@ func HandleDeleteBook(queries database.DBQueries, store storage.R2Store, secret 
 
 		metadata, err := queries.GetMetaData(r.Context(), id)
 		if err != nil {
-			RespondWithError(w, http.StatusNotFound, "Book not found")
+			if errors.Is(err, sql.ErrNoRows) {
+				RespondWithError(w, http.StatusNotFound, "Book not found")
+				return
+			}
+			RespondWithError(w, http.StatusInternalServerError, "Database error: "+err.Error())
 			return
 		}
 

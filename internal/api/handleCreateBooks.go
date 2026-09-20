@@ -1,15 +1,18 @@
 package api
 
 import (
-	"encoding/json"
+	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/knibirdgautam/library/internal/database"
+	"github.com/knibirdgautam/library/internal/extraction"
 	"github.com/knibirdgautam/library/internal/storage"
 )
 
@@ -34,28 +37,42 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 		}
 		defer file.Close()
 
-		type parameters struct {
-			Title        string `json:"title"`
-			Isbn         string `json:"isbn"`
-			Author       string `json:"author"`
-			CategoryCode string `json:"category_code"`
-			PubYear      int16  `json:"pub_year"`
-		}
-		jsonStr := r.FormValue("metadata")
-		if jsonStr == "" {
-			RespondWithError(w, http.StatusBadRequest, "Missing metadata form value")
-			return
-		}
-
-		params := parameters{}
-		err = json.NewDecoder(strings.NewReader(jsonStr)).Decode(&params)
+		mimeType, err := extraction.ExtractMime(file)
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Failed to Decode JSON Body")
+			RespondWithError(w, http.StatusBadRequest, "Mime data couldn't be extracted")
 			return
 		}
 
-		if params.Title == "" || params.Author == "" {
-			RespondWithError(w, http.StatusBadRequest, "Title and Author are required")
+		var meta *extraction.BookMetaData
+		if mimeType == "application/pdf" {
+			meta, err = extraction.ExtractMetadata(file, fileHandler)
+			if err != nil {
+				log.Printf("Failed to extract PDF metadata: %v", err)
+			}
+		}
+
+		title := ""
+		authorName := ""
+		if meta != nil {
+			title = strings.TrimSpace(meta.Title)
+			authorName = strings.TrimSpace(meta.Author)
+		}
+
+		if title == "" && fileHandler != nil {
+			filename := fileHandler.Filename
+			ext := filepath.Ext(filename)
+			title = strings.TrimSuffix(filename, ext)
+		}
+		if title == "" {
+			title = "Untitled"
+		}
+
+		if authorName == "" {
+			authorName = "Unknown"
+		}
+
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Failed to rewind file")
 			return
 		}
 
@@ -66,15 +83,13 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 			return
 		}
 
-		var author database.Author
-		author, err = queries.GetAuthor(r.Context(), params.Author)
-
+		author, err := queries.GetAuthor(r.Context(), authorName)
 		if err != nil {
 			author, err = queries.CreateAuthor(r.Context(), database.CreateAuthorParams{
 				ID:        uuid.New(),
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
-				Name:      params.Author,
+				Name:      authorName,
 			})
 
 			if err != nil {
@@ -84,15 +99,29 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 			}
 		}
 
+		var pageCount sql.NullInt32
+		var producer, subject, pdfVersion sql.NullString
+		if meta != nil {
+			if meta.PageCount > 0 {
+				pageCount = database.ToNullInt32(int32(meta.PageCount))
+			}
+			producer = database.ToNullString(meta.Producer)
+			subject = database.ToNullString(meta.Subject)
+			pdfVersion = database.ToNullString(meta.PDFVersion)
+		}
+
 		book, err := queries.CreateBook(r.Context(), database.CreateBookParams{
-			ID:           uuid.New(),
-			CreatedAt:    time.Now(),
-			UpdatedAt:    time.Now(),
-			Name:         params.Title,
-			Isbn:         database.ToNullString(params.Isbn),
-			FilePath:     fileKey,
-			CategoryCode: params.CategoryCode,
-			PubYear:      params.PubYear,
+			ID:         uuid.New(),
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
+			Name:       title,
+			Isbn:       database.ToNullString(""),
+			FilePath:   fileKey,
+			MimeType:   database.ToNullString(mimeType),
+			PageCount:  pageCount,
+			Producer:   producer,
+			Subject:    subject,
+			PdfVersion: pdfVersion,
 		})
 
 		if err != nil {
@@ -113,9 +142,10 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 		}
 
 		resp := database.Linked{
-			Author: author,
-			Book:   book,
-			Link:   linker,
+			Author:   author,
+			Book:     book,
+			Link:     linker,
+			Metadata: meta,
 		}
 
 		RespondWithJSON(w, http.StatusCreated, resp)

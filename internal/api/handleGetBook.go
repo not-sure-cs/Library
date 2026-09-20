@@ -38,9 +38,17 @@ func HandleGetBooks(queries database.DBQueries, store storage.R2Store, secret st
 		}
 
 		userBook := database.UserBook{
-			BookName:   book.Name,
-			AuthorName: book.Name_2,
+			ID:         book.ID,
+			BookName:   book.BookName,
+			AuthorName: book.AuthorName,
 			ISBN:       book.Isbn,
+			MimeType:   book.MimeType,
+			PageCount:  book.PageCount,
+			Producer:   book.Producer,
+			Subject:    book.Subject,
+			PdfVersion: book.PdfVersion,
+			CreatedAt:  book.CreatedAt,
+			UpdatedAt:  book.UpdatedAt,
 		}
 
 		stream := database.Stream{

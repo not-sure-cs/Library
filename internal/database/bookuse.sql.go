@@ -14,20 +14,38 @@ import (
 )
 
 const getAuthorBooks = `-- name: GetAuthorBooks :many
-SELECT books.name,authors.name,isbn,books.created_at,books.updated_at,book_id,author_id FROM book_authors 
+SELECT 
+    books.id,
+    books.name AS book_name,
+    COALESCE(authors.name, '') AS author_name,
+    books.isbn,
+    books.file_path,
+    books.mime_type,
+    books.page_count,
+    books.producer,
+    books.subject,
+    books.pdf_version,
+    books.created_at,
+    books.updated_at
+FROM book_authors 
 JOIN books ON book_authors.book_id = books.id
 JOIN authors ON book_authors.author_id = authors.id
 WHERE authors.id = $1
 `
 
 type GetAuthorBooksRow struct {
-	Name      string
-	Name_2    string
-	Isbn      sql.NullString
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	BookID    uuid.UUID
-	AuthorID  uuid.UUID
+	ID         uuid.UUID
+	BookName   string
+	AuthorName string
+	Isbn       sql.NullString
+	FilePath   string
+	MimeType   sql.NullString
+	PageCount  sql.NullInt32
+	Producer   sql.NullString
+	Subject    sql.NullString
+	PdfVersion sql.NullString
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 func (q *Queries) GetAuthorBooks(ctx context.Context, id uuid.UUID) ([]GetAuthorBooksRow, error) {
@@ -40,13 +58,18 @@ func (q *Queries) GetAuthorBooks(ctx context.Context, id uuid.UUID) ([]GetAuthor
 	for rows.Next() {
 		var i GetAuthorBooksRow
 		if err := rows.Scan(
-			&i.Name,
-			&i.Name_2,
+			&i.ID,
+			&i.BookName,
+			&i.AuthorName,
 			&i.Isbn,
+			&i.FilePath,
+			&i.MimeType,
+			&i.PageCount,
+			&i.Producer,
+			&i.Subject,
+			&i.PdfVersion,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.BookID,
-			&i.AuthorID,
 		); err != nil {
 			return nil, err
 		}
@@ -62,34 +85,57 @@ func (q *Queries) GetAuthorBooks(ctx context.Context, id uuid.UUID) ([]GetAuthor
 }
 
 const getBook = `-- name: GetBook :one
-SELECT books.name,authors.name,isbn,books.created_at,books.updated_at,book_id,file_path FROM book_authors 
-JOIN books ON book_authors.book_id = books.id
-JOIN authors ON book_authors.author_id = authors.id
+SELECT 
+    books.id,
+    books.name AS book_name,
+    COALESCE(authors.name, '') AS author_name,
+    books.isbn,
+    books.file_path,
+    books.mime_type,
+    books.page_count,
+    books.producer,
+    books.subject,
+    books.pdf_version,
+    books.created_at,
+    books.updated_at
+FROM books
+LEFT JOIN book_authors ON books.id = book_authors.book_id
+LEFT JOIN authors ON book_authors.author_id = authors.id
 WHERE books.id = $1
 LIMIT 1
 `
 
 type GetBookRow struct {
-	Name      string
-	Name_2    string
-	Isbn      sql.NullString
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	BookID    uuid.UUID
-	FilePath  string
+	ID         uuid.UUID
+	BookName   string
+	AuthorName string
+	Isbn       sql.NullString
+	FilePath   string
+	MimeType   sql.NullString
+	PageCount  sql.NullInt32
+	Producer   sql.NullString
+	Subject    sql.NullString
+	PdfVersion sql.NullString
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 func (q *Queries) GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error) {
 	row := q.db.QueryRowContext(ctx, getBook, id)
 	var i GetBookRow
 	err := row.Scan(
-		&i.Name,
-		&i.Name_2,
+		&i.ID,
+		&i.BookName,
+		&i.AuthorName,
 		&i.Isbn,
+		&i.FilePath,
+		&i.MimeType,
+		&i.PageCount,
+		&i.Producer,
+		&i.Subject,
+		&i.PdfVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.BookID,
-		&i.FilePath,
 	)
 	return i, err
 }

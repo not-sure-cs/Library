@@ -1,7 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -33,6 +35,10 @@ func HandleUpdateBook(queries database.DBQueries) http.HandlerFunc {
 
 		book, err := queries.UpdateBook(r.Context(), id, params)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				RespondWithError(w, http.StatusNotFound, "Book not found")
+				return
+			}
 			RespondWithError(w, http.StatusInternalServerError, "Couldn't update book: "+err.Error())
 			return
 		}
@@ -40,4 +46,3 @@ func HandleUpdateBook(queries database.DBQueries) http.HandlerFunc {
 		RespondWithJSON(w, http.StatusOK, book)
 	}
 }
-

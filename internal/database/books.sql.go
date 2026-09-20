@@ -44,21 +44,23 @@ func (q *Queries) CreateAuthor(ctx context.Context, arg CreateAuthorParams) (Aut
 }
 
 const createBook = `-- name: CreateBook :one
-INSERT INTO books (id, created_at, updated_at, name, isbn, file_path, mime_type, category_code, pub_year)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, created_at, updated_at, name, isbn, file_path, mime_type, pub_year, category_code
+INSERT INTO books (id, created_at, updated_at, name, isbn, file_path, mime_type, page_count, producer, subject, pdf_version)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING id, created_at, updated_at, name, isbn, file_path, mime_type, page_count, producer, subject, pdf_version
 `
 
 type CreateBookParams struct {
-	ID           uuid.UUID
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	Name         string
-	Isbn         sql.NullString
-	FilePath     string
-	MimeType     sql.NullString
-	CategoryCode string
-	PubYear      int16
+	ID         uuid.UUID
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Name       string
+	Isbn       sql.NullString
+	FilePath   string
+	MimeType   sql.NullString
+	PageCount  sql.NullInt32
+	Producer   sql.NullString
+	Subject    sql.NullString
+	PdfVersion sql.NullString
 }
 
 func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, error) {
@@ -70,8 +72,10 @@ func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, e
 		arg.Isbn,
 		arg.FilePath,
 		arg.MimeType,
-		arg.CategoryCode,
-		arg.PubYear,
+		arg.PageCount,
+		arg.Producer,
+		arg.Subject,
+		arg.PdfVersion,
 	)
 	var i Book
 	err := row.Scan(
@@ -82,8 +86,10 @@ func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, e
 		&i.Isbn,
 		&i.FilePath,
 		&i.MimeType,
-		&i.PubYear,
-		&i.CategoryCode,
+		&i.PageCount,
+		&i.Producer,
+		&i.Subject,
+		&i.PdfVersion,
 	)
 	return i, err
 }
