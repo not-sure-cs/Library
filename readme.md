@@ -1,4 +1,4 @@
-# Library Management & PDF Ingestion API Service
+# Library: Shadow Library Management & PDF Ingestion API Service
 
 This is my attempt at writing a robust RESTful API built in Go. Essentially, it's my own rendering of a LibGen backend that helps one manage digital library collections, extract PDF metadata automatically, render cover images, control access by user roles, and store files using Cloudflare R2 and PostgreSQL.
 
