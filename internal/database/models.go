@@ -75,6 +75,7 @@ type Book struct {
 	Producer   sql.NullString
 	Subject    sql.NullString
 	PdfVersion sql.NullString
+	CoverPath  string
 }
 
 type BookAuthor struct {

@@ -154,19 +154,20 @@ func (q *Queries) GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error)
 }
 
 const getMetaData = `-- name: GetMetaData :one
-SELECT file_path, mime_type FROM books
+SELECT file_path, cover_path, mime_type FROM books
 WHERE id = $1
 LIMIT 1
 `
 
 type GetMetaDataRow struct {
-	FilePath string
-	MimeType sql.NullString
+	FilePath  string
+	CoverPath string
+	MimeType  sql.NullString
 }
 
 func (q *Queries) GetMetaData(ctx context.Context, id uuid.UUID) (GetMetaDataRow, error) {
 	row := q.db.QueryRowContext(ctx, getMetaData, id)
 	var i GetMetaDataRow
-	err := row.Scan(&i.FilePath, &i.MimeType)
+	err := row.Scan(&i.FilePath, &i.CoverPath, &i.MimeType)
 	return i, err
 }

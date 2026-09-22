@@ -3,14 +3,17 @@
 package database
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"mime/multipart"
 	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/knibirdgautam/library/internal/extraction"
 	"github.com/knibirdgautam/library/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -137,8 +140,8 @@ func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) 
 	return ub, err
 }
 
-
-const path = "Assets/Books/"
+const bookPath = "Assets/Books/"
+const coverPath = "Assets/Covers/"
 
 func GenerateFileName(id int64, now time.Time) string {
 	return "Type-Book-" + uuid.New().String()
@@ -156,22 +159,39 @@ func (q *Queries) CountBook(ctx context.Context) (int64, error) {
 	return store, err
 }
 
-func SaveFile(total int64, r context.Context, secret storage.Secret, store storage.R2Store, file multipart.File, handler *multipart.FileHeader) (string, error) {
-	ext := filepath.Ext(handler.Filename)
-	name := GenerateFileName(total, time.Now()) + ext
-	key := path + name
+func SaveFile(total int64, r context.Context, secret storage.Secret, store storage.R2Store, file multipart.File, handler *multipart.FileHeader) (string, string, error) {
+	ext1 := filepath.Ext(handler.Filename)
+	ext2 := ".jpg"
+	name := GenerateFileName(total, time.Now())
+	fileKey := bookPath + name + ext1
+	coverKey := coverPath + name + ext2
 
 	contentType := handler.Header.Get("Content-Type")
 	if contentType == "" {
 		contentType = "application/octet-stream"
 	}
 
-	err := store.UploadFile(r, secret.Bucket, key, contentType, file)
+	coverPDFBytes, err := extraction.ExtractCover(file)
 	if err != nil {
-		return "", err
+		return "", "", fmt.Errorf("extract cover page error: %w", err)
 	}
 
-	return key, nil
+	jpegBytes, err := extraction.PDFtoJPEGinMem(r, coverPDFBytes)
+	if err != nil {
+		return "", "", fmt.Errorf("convert pdf to jpeg error: %w", err)
+	}
+
+	err = store.UploadFile(r, secret.Bucket, fileKey, contentType, file)
+	if err != nil {
+		return "", "", err
+	}
+
+	err = store.UploadFile(r, secret.Bucket, coverKey, "image/jpeg", bytes.NewBuffer(jpegBytes))
+	if err != nil {
+		return "", "", err
+	}
+
+	return fileKey, coverKey, nil
 }
 
 func UnsaveFile(r context.Context, secret storage.Secret, store storage.R2Store, filename string) error {
@@ -182,6 +202,7 @@ func UnsaveFile(r context.Context, secret storage.Secret, store storage.R2Store,
 
 	return nil
 }
+
 
 func PasswordHash(pass []byte) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword(pass, bcrypt.DefaultCost)

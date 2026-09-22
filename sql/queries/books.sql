@@ -1,6 +1,6 @@
 -- name: CreateBook :one
-INSERT INTO books (id, created_at, updated_at, name, isbn, file_path, mime_type, page_count, producer, subject, pdf_version)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+INSERT INTO books (id, created_at, updated_at, name, isbn, file_path, cover_path, mime_type, page_count, producer, subject, pdf_version)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 RETURNING *;
 
 -- name: CreateAuthor :one

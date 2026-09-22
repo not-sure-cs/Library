@@ -1,6 +1,7 @@
 package extraction
 
 import (
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -64,3 +65,38 @@ func ExtractMetadata(file multipart.File, fileHandler *multipart.FileHeader) (*B
 	return metadata, nil
 
 }
+
+func ExtractCover(file multipart.File) ([]byte, error) {
+
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	defer file.Seek(0, io.SeekStart)
+
+	var coverPDFBytes []byte
+	coverPage := []string{"1"}
+
+	digestReader := func(reader io.Reader, page int) error {
+		var err error
+		// Read all bytes of the 1-page PDF into our slice
+		coverPDFBytes, err = io.ReadAll(reader)
+		if err != nil {
+			return fmt.Errorf("failed to read page %d: %w", page, err)
+		}
+		return nil
+	}
+
+	err := api.ExtractPages(file, coverPage, digestReader, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(coverPDFBytes) == 0 {
+    return nil, fmt.Errorf("no cover page content could be extracted")
+ }
+
+	return coverPDFBytes, nil
+}
+
+

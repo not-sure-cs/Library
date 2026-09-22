@@ -38,7 +38,7 @@ JOIN authors ON book_authors.author_id = authors.id
 WHERE authors.id = $1;
 
 -- name: GetMetaData :one
-SELECT file_path, mime_type FROM books
+SELECT file_path, cover_path, mime_type FROM books
 WHERE id = $1
 LIMIT 1;
 

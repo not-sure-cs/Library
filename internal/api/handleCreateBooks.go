@@ -92,7 +92,7 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 			return
 		}
 
-		fileKey, err := database.SaveFile(0, r.Context(), secret, store, file, fileHandler)
+		fileKey, coverKey, err := database.SaveFile(0, r.Context(), secret, store, file, fileHandler)
 		if err != nil {
 			log.Printf("R2 Upload Error: %v", err)
 			RespondWithError(w, http.StatusInternalServerError, "Upload failed")
@@ -133,6 +133,7 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 			Name:       title,
 			Isbn:       database.ToNullString(""),
 			FilePath:   fileKey,
+			CoverPath:  coverKey,
 			MimeType:   database.ToNullString(mimeType),
 			PageCount:  pageCount,
 			Producer:   producer,
@@ -153,7 +154,10 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 		})
 
 		if err != nil {
+
 			_ = database.UnsaveFile(r.Context(), secret, store, fileKey)
+			_ = database.UnsaveFile(r.Context(), secret, store, coverKey)
+
 			RespondWithError(w, http.StatusInternalServerError, "Couldn't link Books and Authors")
 			return
 		}

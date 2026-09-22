@@ -50,9 +50,10 @@ func HandleDeleteBook(queries database.DBQueries, store storage.R2Store, secret 
 		}
 
 		if metadata.FilePath != "" {
-			err = database.UnsaveFile(r.Context(), secret, store, metadata.FilePath)
-			if err != nil {
-				log.Printf("File deletion from storage failed with: %v", err)
+			err1 := database.UnsaveFile(r.Context(), secret, store, metadata.FilePath)
+			err2 := database.UnsaveFile(r.Context(), secret, store, metadata.CoverPath)
+			if err1 != nil || err2 != nil {
+				log.Printf("File deletion from storage failed with: %v & %v", err1, err2)
 			}
 		}
 
