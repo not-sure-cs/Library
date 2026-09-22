@@ -1,6 +1,8 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -27,7 +29,11 @@ func HandleGetBooks(queries database.DBQueries, store storage.R2Store, secret st
 
 		book, err := queries.GetBook(r.Context(), id)
 		if err != nil {
-			RespondWithError(w, http.StatusNotFound, "Book not found")
+			if errors.Is(err, sql.ErrNoRows) {
+				RespondWithError(w, http.StatusNotFound, "Book not found")
+				return
+			}
+			RespondWithError(w, http.StatusInternalServerError, "Database error: "+err.Error())
 			return
 		}
 
@@ -47,6 +53,7 @@ func HandleGetBooks(queries database.DBQueries, store storage.R2Store, secret st
 			Producer:   book.Producer,
 			Subject:    book.Subject,
 			PdfVersion: book.PdfVersion,
+			CoverPath:  book.CoverPath,
 			CreatedAt:  book.CreatedAt,
 			UpdatedAt:  book.UpdatedAt,
 		}

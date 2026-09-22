@@ -51,11 +51,18 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 
 		exists, err := queries.CheckApiKeyExists(r.Context(), fileHash)
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Failed the key check")
+			RespondWithError(w, http.StatusInternalServerError, "Failed the key check")
+			return
 		}
 
-		if exists != false {
-			log.Print("File Already Exists")
+		if exists {
+			RespondWithError(w, http.StatusConflict, "File Already Exists")
+			return
+		}
+
+		// Rewind file pointer after ExtractMime before ExtractMetadata
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Failed to rewind file")
 			return
 		}
 
@@ -92,7 +99,7 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 			return
 		}
 
-		fileKey, coverKey, err := database.SaveFile(0, r.Context(), secret, store, file, fileHandler)
+		fileKey, coverKey, err := database.SaveFile(r.Context(), secret, store, file, fileHandler)
 		if err != nil {
 			log.Printf("R2 Upload Error: %v", err)
 			RespondWithError(w, http.StatusInternalServerError, "Upload failed")
@@ -110,6 +117,7 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 
 			if err != nil {
 				_ = database.UnsaveFile(r.Context(), secret, store, fileKey)
+				_ = database.UnsaveFile(r.Context(), secret, store, coverKey)
 				RespondWithError(w, http.StatusInternalServerError, "Could not Create Author")
 				return
 			}
@@ -143,6 +151,7 @@ func HandleCreateBooks(queries database.DBQueries, store storage.R2Store, secret
 
 		if err != nil {
 			_ = database.UnsaveFile(r.Context(), secret, store, fileKey)
+			_ = database.UnsaveFile(r.Context(), secret, store, coverKey)
 			RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("DBError: %s", err))
 			return
 		}

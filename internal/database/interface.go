@@ -26,4 +26,5 @@ type DBQueries interface {
 	GetUser(ctx context.Context, email sql.NullString) (User, error)
 	GetPassHash(ctx context.Context, email sql.NullString) (string, error)
 	CheckApiKeyExists(ctx context.Context, apiKey string) (bool, error)
+	GetBookApiKey(ctx context.Context, bookID uuid.UUID) (string, error)
 }

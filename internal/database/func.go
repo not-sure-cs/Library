@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"mime/multipart"
 	"path/filepath"
@@ -26,14 +27,6 @@ func ToNullString(s string) sql.NullString {
 	}
 
 	r.String = s
-	r.Valid = true
-	return r
-}
-
-func ToNullInt16(s int16) sql.NullInt16 {
-	var r sql.NullInt16
-
-	r.Int16 = s
 	r.Valid = true
 	return r
 }
@@ -69,7 +62,7 @@ const updateBook = `
             page_count = CASE WHEN $5::int <= 0 THEN page_count ELSE $5 END,
             updated_at = NOW()
         WHERE id = $6
-        RETURNING id, name, isbn, file_path, mime_type, page_count, producer, subject, pdf_version, created_at, updated_at
+        RETURNING id, name, isbn, file_path, cover_path, mime_type, page_count, producer, subject, pdf_version, created_at, updated_at
     )
     SELECT 
         ub.id,
@@ -81,6 +74,7 @@ const updateBook = `
         ub.producer,
         ub.subject,
         ub.pdf_version,
+        ub.cover_path,
         ub.created_at,
         ub.updated_at
     FROM updated_book ub
@@ -91,6 +85,12 @@ const updateBook = `
 
 func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) (UserBook, error) {
 	if arg.Author != "" {
+		apiKey, err := q.GetBookApiKey(ctx, id)
+		if err != nil {
+			// If not found or error, fallback to generating a unique key
+			apiKey = uuid.New().String()
+		}
+
 		author, err := q.GetAuthor(ctx, arg.Author)
 		if err != nil {
 			author, err = q.CreateAuthor(ctx, CreateAuthorParams{
@@ -107,6 +107,7 @@ func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) 
 		_, err = q.LinkBookAuthor(ctx, LinkBookAuthorParams{
 			BookID:   id,
 			AuthorID: author.ID,
+			ApiKey:   apiKey,
 		})
 		if err != nil {
 			return UserBook{}, err
@@ -133,6 +134,7 @@ func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) 
 		&ub.Producer,
 		&ub.Subject,
 		&ub.PdfVersion,
+		&ub.CoverPath,
 		&ub.CreatedAt,
 		&ub.UpdatedAt,
 	)
@@ -143,7 +145,7 @@ func (q *Queries) UpdateBook(ctx context.Context, id uuid.UUID, arg Parameters) 
 const bookPath = "Assets/Books/"
 const coverPath = "Assets/Covers/"
 
-func GenerateFileName(id int64, now time.Time) string {
+func GenerateFileName() string {
 	return "Type-Book-" + uuid.New().String()
 }
 
@@ -159,10 +161,10 @@ func (q *Queries) CountBook(ctx context.Context) (int64, error) {
 	return store, err
 }
 
-func SaveFile(total int64, r context.Context, secret storage.Secret, store storage.R2Store, file multipart.File, handler *multipart.FileHeader) (string, string, error) {
+func SaveFile(r context.Context, secret storage.Secret, store storage.R2Store, file multipart.File, handler *multipart.FileHeader) (string, string, error) {
 	ext1 := filepath.Ext(handler.Filename)
 	ext2 := ".jpg"
-	name := GenerateFileName(total, time.Now())
+	name := GenerateFileName()
 	fileKey := bookPath + name + ext1
 	coverKey := coverPath + name + ext2
 
@@ -179,6 +181,11 @@ func SaveFile(total int64, r context.Context, secret storage.Secret, store stora
 	jpegBytes, err := extraction.PDFtoJPEGinMem(r, coverPDFBytes)
 	if err != nil {
 		return "", "", fmt.Errorf("convert pdf to jpeg error: %w", err)
+	}
+
+	// Rewind file pointer after ExtractCover read it, so R2 receives full file
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return "", "", fmt.Errorf("failed to rewind file before upload: %w", err)
 	}
 
 	err = store.UploadFile(r, secret.Bucket, fileKey, contentType, file)

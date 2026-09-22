@@ -5,6 +5,7 @@ SELECT
     COALESCE(authors.name, '') AS author_name,
     books.isbn,
     books.file_path,
+    books.cover_path,
     books.mime_type,
     books.page_count,
     books.producer,
@@ -25,6 +26,7 @@ SELECT
     COALESCE(authors.name, '') AS author_name,
     books.isbn,
     books.file_path,
+    books.cover_path,
     books.mime_type,
     books.page_count,
     books.producer,
@@ -46,3 +48,8 @@ LIMIT 1;
 SELECT EXISTS (
   SELECT 1 FROM book_authors WHERE api_key = $1
 )AS exists;
+
+-- name: GetBookApiKey :one
+SELECT api_key FROM book_authors
+WHERE book_id = $1
+LIMIT 1;

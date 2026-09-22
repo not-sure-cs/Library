@@ -33,6 +33,7 @@ SELECT
     COALESCE(authors.name, '') AS author_name,
     books.isbn,
     books.file_path,
+    books.cover_path,
     books.mime_type,
     books.page_count,
     books.producer,
@@ -52,6 +53,7 @@ type GetAuthorBooksRow struct {
 	AuthorName string
 	Isbn       sql.NullString
 	FilePath   string
+	CoverPath  string
 	MimeType   sql.NullString
 	PageCount  sql.NullInt32
 	Producer   sql.NullString
@@ -76,6 +78,7 @@ func (q *Queries) GetAuthorBooks(ctx context.Context, id uuid.UUID) ([]GetAuthor
 			&i.AuthorName,
 			&i.Isbn,
 			&i.FilePath,
+			&i.CoverPath,
 			&i.MimeType,
 			&i.PageCount,
 			&i.Producer,
@@ -104,6 +107,7 @@ SELECT
     COALESCE(authors.name, '') AS author_name,
     books.isbn,
     books.file_path,
+    books.cover_path,
     books.mime_type,
     books.page_count,
     books.producer,
@@ -124,6 +128,7 @@ type GetBookRow struct {
 	AuthorName string
 	Isbn       sql.NullString
 	FilePath   string
+	CoverPath  string
 	MimeType   sql.NullString
 	PageCount  sql.NullInt32
 	Producer   sql.NullString
@@ -142,6 +147,7 @@ func (q *Queries) GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error)
 		&i.AuthorName,
 		&i.Isbn,
 		&i.FilePath,
+		&i.CoverPath,
 		&i.MimeType,
 		&i.PageCount,
 		&i.Producer,
@@ -151,6 +157,19 @@ func (q *Queries) GetBook(ctx context.Context, id uuid.UUID) (GetBookRow, error)
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getBookApiKey = `-- name: GetBookApiKey :one
+SELECT api_key FROM book_authors
+WHERE book_id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetBookApiKey(ctx context.Context, bookID uuid.UUID) (string, error) {
+	row := q.db.QueryRowContext(ctx, getBookApiKey, bookID)
+	var api_key string
+	err := row.Scan(&api_key)
+	return api_key, err
 }
 
 const getMetaData = `-- name: GetMetaData :one

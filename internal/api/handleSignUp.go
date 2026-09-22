@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -61,7 +62,11 @@ func HandleSignUp(queries database.DBQueries) http.HandlerFunc {
 			PhNo:      database.ToNullString(params.Phone),
 		})
 		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Failed to Create User: "+err.Error())
+			if strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate") {
+				RespondWithError(w, http.StatusConflict, "User with this email already exists")
+				return
+			}
+			RespondWithError(w, http.StatusInternalServerError, "Failed to Create User: "+err.Error())
 			return
 		}
 

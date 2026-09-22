@@ -7,19 +7,10 @@ import (
 )
 
 func RespondWithError(w http.ResponseWriter, statusCode int, msg string) {
-
-	var response map[string]string
 	if statusCode >= http.StatusInternalServerError {
 		log.Printf("CRITICAL ERROR %d, %s", statusCode, msg)
 	}
-	if statusCode < http.StatusInternalServerError {
-		response = map[string]string{"Error": msg}
-	} else {
-		response = map[string]string{"Error": msg}
-	}
-
-	RespondWithJSON(w, statusCode, response)
-
+	RespondWithJSON(w, statusCode, map[string]string{"error": msg})
 }
 
 func RespondWithJSON(w http.ResponseWriter, statusCode int, payload interface{}) {

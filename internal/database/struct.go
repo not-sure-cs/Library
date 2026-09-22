@@ -29,6 +29,7 @@ type UserBook struct {
 	Producer   sql.NullString `json:"producer"`
 	Subject    sql.NullString `json:"subject"`
 	PdfVersion sql.NullString `json:"pdf_version"`
+	CoverPath  string         `json:"cover_path"`
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`
 }

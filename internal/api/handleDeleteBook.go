@@ -37,6 +37,14 @@ func HandleDeleteBook(queries database.DBQueries, store storage.R2Store, secret 
 			return
 		}
 
+		if metadata.FilePath != "" {
+			err1 := database.UnsaveFile(r.Context(), secret, store, metadata.FilePath)
+			err2 := database.UnsaveFile(r.Context(), secret, store, metadata.CoverPath)
+			if err1 != nil || err2 != nil {
+				log.Printf("File deletion from storage failed with: %v & %v", err1, err2)
+			}
+		}
+
 		err = queries.UnlinkBook(r.Context(), id)
 		if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, "Couldn't Unlink book")
@@ -47,14 +55,6 @@ func HandleDeleteBook(queries database.DBQueries, store storage.R2Store, secret 
 		if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, "Couldn't Delete book")
 			return
-		}
-
-		if metadata.FilePath != "" {
-			err1 := database.UnsaveFile(r.Context(), secret, store, metadata.FilePath)
-			err2 := database.UnsaveFile(r.Context(), secret, store, metadata.CoverPath)
-			if err1 != nil || err2 != nil {
-				log.Printf("File deletion from storage failed with: %v & %v", err1, err2)
-			}
 		}
 
 		RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Book deleted"})
